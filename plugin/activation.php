@@ -65,7 +65,7 @@ final class Activation extends Helpers\Singleton {
 			return;
 		}
 
-		// No more checks
+		// No more checks in this thread
 		update_option('plblst_check_activation', '', true);
 
 		// Update the plugins list
