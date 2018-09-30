@@ -1,32 +1,33 @@
-; Example blacklist.txt file
-; This file must be placed in the wp-content directory
+;; Example blacklist.txt file
+;; This file must be placed in the wp-content directory (e.g. wp-content/blacklist.txt)
 
-;;;;;;;;;;;;;;;;;;
-; Plugins Blackist
-;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;
+;; Active Blacklist ;;
+;;;;;;;;;;;;;;;;;;;;;;
 
-; any path match (case insensitive)
-; for exact directory matches use slashes e.g. /rev-slider/
+;; match any path (case insensitive)
+;; for exact directory matches use slashes e.g. /revslider/
 [path]
-rev-slider
+revslider
 
-; Look for exact class names (case sensitive)
+;; match exact class names (case sensitive)
 [classes]
 revslider_classname
 
-; Look for exact function names (case sensitive)
+;; match exact function names (case sensitive)
 [functions]
 putRevSlider
 
-;;;;;;;;;;;;;;;;
-;Future warnings
-;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;
+;; Future Blacklist ;;
+;;;;;;;;;;;;;;;;;;;;;;
 
-; any path match (case insensitive)
+;; match any path (case insensitive)
+;; for exact directory matches use slashes e.g. /revslider/
 [path future]
 
-; Look for exact class names (case sensitive)
+;; match exact class names (case sensitive)
 [classes future]
 
-; Look for exact function names (case sensitive)
+;; match exact function names (case sensitive)
 [functions future]
