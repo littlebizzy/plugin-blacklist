@@ -2,7 +2,7 @@
 /*
 Plugin Name: Plugin Blacklist
 Plugin URI: https://www.littlebizzy.com/plugins/plugin-blacklist
-Description: A carefully selected security suite for WordPress that combines only the most effective methods of guarding against hackers and other common attacks.
+Description: Allows web hosts, agencies, or other WordPress site managers to disallow a custom list of plugins from being activated for security or other reasons.
 Version: 1.0.0
 Author: LittleBizzy
 Author URI: https://www.littlebizzy.com
