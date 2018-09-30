@@ -3,7 +3,6 @@
 A carefully selected security suite for WordPress that combines only the most effective methods of guarding against hackers and other common attacks.
 
 * [Plugin homepage](https://www.littlebizzy.com/plugins/plugin-blacklist)
-* [Download (WordPress.org)]
 * [Free Facebook group](https://www.facebook.com/groups/littlebizzy/)
 
 ### Support issues
