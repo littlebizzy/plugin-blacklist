@@ -32,9 +32,20 @@ final class Disabler extends Helpers\Singleton {
 
 
 	/**
-	 * Current plugins
+	 * Plugins path root
 	 */
-	private $plugins;
+	private $prefix;
+	private $prefixLength;
+
+
+
+	/**
+	 * Pseudo constructor
+	 */
+	protected function onConstruct() {
+		$this->prefix = WP_PLUGIN_DIR.'/';
+		$this->prefixLength = strlen($this->prefix);
+	}
 
 
 
@@ -43,22 +54,9 @@ final class Disabler extends Helpers\Singleton {
 	 */
 	public function byPath() {
 
-		// Cache flag
-		static $updated;
-		if (isset($updated)) {
-			return false;
-		}
-
-		// Set status
-		$updated = true;
-
 		// Retrieve active plugins
-		if (!isset($this->plugins)) {
-			$this->plugins = wp_get_active_and_valid_plugins();
-		}
-
-		// Check active plugins
-		if (empty($this->plugins) || !is_array($this->plugins)) {
+		$plugins = wp_get_active_and_valid_plugins();
+		if (empty($plugins) || !is_array($plugins)) {
 			return false;
 		}
 
@@ -70,36 +68,30 @@ final class Disabler extends Helpers\Singleton {
 		// Copy the future message
 		$this->futureMessage = $this->plugin->factory->blacklist()->getSectionString('message future');
 
-		// Prepare blacklist
-		if (empty($blacklist['path']) || !is_array($blacklist['path'])) {
-			$blacklist['path'] = [];
+		// Prepare blacklist items
+		$keys = ['path', 'path future'];
+		foreach ($keys as $key) {
+			if (empty($blacklist[$key]) || !is_array($blacklist[$key])) {
+				$blacklist[$key] = [];
+			}
 		}
 
-		// Prepare future
-		if (empty($blacklist['path future']) || !is_array($blacklist['path future'])) {
-			$blacklist['path future'] = [];
-		}
-
-		// Initialize
+		// Init
 		$allowed = [];
 
-		// Expected path
-		$prefix = WP_PLUGIN_DIR.'/';
-		$prefixLength = strlen($prefix);
-
 		// Enum plugins paths
-		foreach ($this->plugins as $path) {
+		foreach ($plugins as $path) {
 
 
 			/* Validation */
 
-			// Check path start
-			if (0 !== strpos($path, $prefix)) {
+			// Check valid path start
+			if (0 !== strpos($path, $this->prefix)) {
 				continue;
 			}
 
 			// Set relative
-			$relativePath = substr($path, $prefixLength);
+			$relativePath = substr($path, $this->prefixLength);
 			if (empty($relativePath)) {
 				continue;
 			}
@@ -117,10 +109,10 @@ final class Disabler extends Helpers\Singleton {
 					// Check file
 					if (@file_exists($path)) {
 
-						// Matched
+						// Detected
 						$match = true;
 
-						// Detected
+						// Deactivate
 						$this->deactivated[] = $path;
 
 						// Done
@@ -129,7 +121,7 @@ final class Disabler extends Helpers\Singleton {
 				}
 			}
 
-			// Check if allowed
+			// Check allowed
 			if (!$match) {
 				$allowed[] = $relativePath;
 			}
@@ -166,7 +158,6 @@ final class Disabler extends Helpers\Singleton {
 		}
 
 		// Update plugins
-		$this->plugins = $allowed;
 		update_option('active_plugins', $allowed);
 
 		// Done
@@ -180,8 +171,217 @@ final class Disabler extends Helpers\Singleton {
 	 */
 	public function byCode() {
 
+		// Retrieve active plugins
+		$plugins = wp_get_active_and_valid_plugins();
+		if (empty($plugins) || !is_array($plugins)) {
+			return false;
+		}
+
+		// Get the blacklist
+		if (false === ($blacklist = $this->plugin->factory->blacklist()->read())) {
+			return false;
+		}
+
+		// Copy the future message
+		$this->futureMessage = $this->plugin->factory->blacklist()->getSectionString('message future');
+
+		// Prepare blacklist items
+		$keys = ['classes', 'functions', 'classes future', 'functions future'];
+		foreach ($keys as $key) {
+			if (empty($blacklist[$key]) || !is_array($blacklist[$key])) {
+				$blacklist[$key] = [];
+			}
+		}
 
 
+		/* Extract directories */
+
+		// Plugin directories
+		$directories = [];
+		$directoriesFuture = [];
+
+		// Check classes
+		$this->classes($blacklist['classes'], $directories);
+		$this->classes($blacklist['classes future'], $directoriesFuture);
+
+		// Check functions
+		$this->functions($blacklist['functions'], $directories);
+		$this->functions($blacklist['functions future'], $directoriesFuture);
+
+
+		/* Cast plugin paths to relative paths */
+
+		// Populate plugins relative path
+		$pluginsRel = [];
+		foreach ($plugins as $path) {
+
+			// Check valid path start
+			if (0 !== strpos($path, $this->prefix)) {
+				continue;
+			}
+
+			// Set relative
+			$relativePath = substr($path, $this->prefixLength);
+			if (empty($relativePath)) {
+				continue;
+			}
+
+			// Done
+			$pluginsRel[$relativePath] = $path;
+		}
+
+
+		/* Detect plugins by directory */
+
+		// Enum directories
+		foreach ($directories as $directory) {
+
+			// Enum plugins
+			foreach ($pluginsRel as $relativePath => $path) {
+
+				// Check path start
+				if (0 === strpos($relativePath, $directory.'/')) {
+
+					// Check if already deactivated
+					if (!in_array($path, $this->deactivated)) {
+
+						// Check file
+						if (@file_exists($path)) {
+							$this->deactivated[] = $path;
+						}
+					}
+
+					// Done
+					break;
+				}
+			}
+		}
+
+		// Enum directories future
+		foreach ($directoriesFuture as $directory) {
+
+			// Enum plugins
+			foreach ($pluginsRel as $relativePath => $path) {
+
+				// Check path start
+				if (0 === strpos($relativePath, $directory.'/')) {
+
+					// Check if already deactivated
+					if (!in_array($path, $this->deactivated) &&
+						!in_array($path, $this->future)) {
+
+						// Check file
+						if (@file_exists($path)) {
+							$this->future[] = $path;
+						}
+					}
+
+					// Done
+					break;
+				}
+			}
+		}
+
+
+		/* Save plugins */
+
+		// Prepare allowed
+		$allowed = [];
+		foreach ($pluginsRel as $relativePath => $path) {
+			if (!in_array($path, $this->deactivated)) {
+				$allowed[] = $relativePath;
+			}
+		}
+
+		// Update plugins
+		update_option('active_plugins', $allowed);
+
+		// Done
+		return true;
+	}
+
+
+
+	/**
+	 * Extract the plugin directory by the class path detected
+	 */
+	private function classes($classes, &$directories) {
+
+		// Enum classes
+		foreach ($classes as $key => $class) {
+
+			// Check class
+			if (!class_exists($class)) {
+				 continue;
+			}
+
+			// Extract path
+			$reflection = new \ReflectionClass($class);
+			if (false === ($path = $reflection->getFileName())) {
+				continue;
+			}
+
+			// Extract directory
+			if (false !== ($directory = $this->directory($path))) {
+				$directories[] = $directory;
+			}
+		}
+	}
+
+
+
+	/**
+	 * Extract the plugin directory by the function path detected
+	 */
+	private function functions($functions, &$directories) {
+
+		// Enum functions
+		foreach ($functions as $key => $function) {
+
+			// Check class
+			if (!function_exists($function)) {
+				continue;
+			}
+
+			// Extract path
+			$reflection = new \ReflectionFunction($function);
+			if (false === ($path = $reflection->getFileName())) {
+				continue;
+			}
+
+			// Extract directory
+			if (false !== ($directory = $this->directory($path))) {
+				$directories[] = $directory;
+			}
+		}
+	}
+
+
+
+	/**
+	 * Extract directory from class
+	 */
+	private function directory($path) {
+
+		// Check valid plugin
+		if (0 !== strpos($path, $this->prefix)) {
+			false;
+		}
+
+		// Set relative
+		$relativePath = substr($path, $this->prefixLength);
+		if (empty($relativePath)) {
+			false;
+		}
+
+		// Extract first directory
+		$directory = explode('/', trim($relativePath, '/'));
+		return $directory[0];
+
+		// Check directory
+		if (!in_array($directory, $this->directories)) {
+			$this->directories[] = $directory;
+		}
 	}
 
 
