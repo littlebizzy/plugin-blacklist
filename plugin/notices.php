@@ -48,7 +48,7 @@ final class Notices extends Helpers\Singleton {
 
 			<div class="notice notice-error is-dismissible">
 
-				<p><?php echo esc_html($this->message('deactivated')); ?></p>
+				<p><?php echo $this->message('deactivated'); ?></p>
 
 				<ul>
 					<li><?php echo implode('</li><li>', array_map('esc_html', $this->deactivated)); ?></li>
@@ -63,7 +63,7 @@ final class Notices extends Helpers\Singleton {
 
 			<div class="notice notice-error is-dismissible">
 
-				<p><?php echo esc_html($this->message('future')); ?></p>
+				<p><?php echo $this->message('future'); ?></p>
 
 				<ul>
 					<li><?php echo implode('</li><li>', array_map('esc_html', $this->future)); ?></li>
@@ -109,18 +109,30 @@ final class Notices extends Helpers\Singleton {
 	 */
 	private function message($type) {
 
+		// Init
+		$message = '';
+
+		// Deactivation
 		if ('deactivated' == $type) {
-			$message = $this->plugin->factory->blacklist()->getSectionFirstLine('message');
-			return empty($message)? 'The following plugins are not allowed and have been disabled:' : $message;
+			$message = $this->plugin->factory->blacklist()->getSectionString('message');
+			if (empty($message)) {
+				$message = 'The following plugins are not allowed and have been disabled:';
+			}
 		}
 
+		// Future deactivation
 		if ('future' == $type) {
 			$message = get_option('plblst_future_message');
-			return empty($message)? 'The following plugins will be deactivated shortly:' : $message;
+			if (empty($message)) {
+				$message = 'The following plugins will be deactivated shortly:';
+			}
 		}
 
-		// Error
-		return '';
+		// Escape message
+		$message = implode("<br />", array_map('esc_html', explode("\n", $message)));
+
+		// Done
+		return $message;
 	}
 
 

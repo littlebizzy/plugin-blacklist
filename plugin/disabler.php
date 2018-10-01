@@ -68,7 +68,7 @@ final class Disabler extends Helpers\Singleton {
 		}
 
 		// Copy the future message
-		$this->futureMessage = $this->plugin->factory->blacklist()->getSectionFirstLine('message');
+		$this->futureMessage = $this->plugin->factory->blacklist()->getSectionString('message future');
 
 		// Prepare blacklist
 		if (empty($blacklist['path']) || !is_array($blacklist['path'])) {
@@ -109,12 +109,7 @@ final class Disabler extends Helpers\Singleton {
 
 			// Find in blacklist
 			$match = false;
-			foreach ($blacklist['path'] as $item => $enabled) {
-
-				// Check item enabled
-				if (!$enabled) {
-					continue;
-				}
+			foreach ($blacklist['path'] as $key => $item) {
 
 				// Find in blacklist path
 				if (false !== strpos('/'.$relativePath, $item)) {
@@ -143,12 +138,7 @@ final class Disabler extends Helpers\Singleton {
 			/* Future blacklist */
 
 			// Find in blacklist future
-			foreach ($blacklist['path future'] as $item => $enabled) {
-
-				// Check item enabled
-				if (!$enabled) {
-					continue;
-				}
+			foreach ($blacklist['path future'] as $key => $item) {
 
 				// Find in blacklist path
 				if (false !== strpos('/'.$relativePath, $item)) {

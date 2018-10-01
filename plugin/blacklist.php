@@ -55,6 +55,7 @@ final class Blacklist extends Helpers\Singleton {
 		$lines = explode("\n", $lines);
 
 		// Enum lines
+		$index = -1;
 		$lines2 = [];
 		foreach ($lines as $line) {
 
@@ -73,11 +74,19 @@ final class Blacklist extends Helpers\Singleton {
 				}
 			}
 
+			// Index
+			$index++;
+
 			// Check section
 			if ('[' != substr($line, 0, 1)) {
-				if (false === strpos($line, '=')) {
-					$line .= ' = 1';
+
+				// Replace double quotes
+				if (false !== strpos($line, '"')) {
+					$line = str_replace('"', '\\'.'"', $line);
 				}
+
+				// Set new line
+				$line = 'value'.$index.' = "'.$line.'"';
 			}
 
 			// Sanitized line
@@ -104,28 +113,31 @@ final class Blacklist extends Helpers\Singleton {
 
 
 	/**
-	 * Retrieve first section line
+	 * Retrieve entire section as a string
 	 */
-	public function getSectionFirstLine($section) {
+	public function getSectionString($section) {
 
 		// Retrieve data
 		$blacklist = $this->read();
 		if (empty($blacklist) || !is_array($blacklist)) {
-			return null;
+			return '';
 		}
 
 		// Check section
 		if (empty($blacklist[$section]) || !is_array($blacklist[$section])) {
-			return null;
+			return '';
 		}
 
-		// Enum section
+		// Init
+		$message = '';
+
+		// Enum section lines
 		foreach ($blacklist[$section] as $item => $value) {
-			return $item;
+			$message .= (empty($message)? '' : "\n").$value;
 		}
 
 		// Error
-		return '';
+		return $message;
 	}
 
 
