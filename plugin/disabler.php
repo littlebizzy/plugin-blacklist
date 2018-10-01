@@ -146,8 +146,12 @@ final class Disabler extends Helpers\Singleton {
 					// Check file
 					if (@file_exists($path)) {
 
-						// Detected
-						$this->future[] = $path;
+						// Do not add deactivated plugins
+						if (!in_array($path, $this->deactivated)) {
+
+							// Detected
+							$this->future[] = $path;
+						}
 
 						// Done
 						break;
