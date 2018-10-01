@@ -46,12 +46,12 @@ final class Notices extends Helpers\Singleton {
 
 			<style>#message { display: none; }</style>
 
-			<div class="notice notice-error is-dismissible">
+			<div class="notice notice-warning">
 
 				<p><?php echo $this->message('deactivated'); ?></p>
 
 				<ul>
-					<li><?php echo implode('</li><li>', array_map('esc_html', $this->deactivated)); ?></li>
+					<li><?php echo implode('</li><li>', $this->deactivated); ?></li>
 				</ul>
 
 			</div><?php
@@ -61,12 +61,12 @@ final class Notices extends Helpers\Singleton {
 		// Future plugins
 		if (!empty($this->future)) : ?>
 
-			<div class="notice notice-error is-dismissible">
+			<div class="notice notice-info">
 
 				<p><?php echo $this->message('future'); ?></p>
 
 				<ul>
-					<li><?php echo implode('</li><li>', array_map('esc_html', $this->future)); ?></li>
+					<li><?php echo implode('</li><li>', $this->future); ?></li>
 				</ul>
 
 			</div><?php
@@ -86,7 +86,7 @@ final class Notices extends Helpers\Singleton {
 		if (!empty($deactivated)) {
 			foreach ($deactivated as $path) {
 				if (@file_exists($path)) {
-					$this->deactivated[] = $path;
+					$this->deactivated[] = $this->getPluginName($path);
 				}
 			}
 		}
@@ -96,7 +96,7 @@ final class Notices extends Helpers\Singleton {
 		if (!empty($future) && is_array($future)) {
 			foreach ($future as $path) {
 				if (@file_exists($path)) {
-					$this->future[] = $path;
+					$this->future[] = $this->getPluginName($path);
 				}
 			}
 		}
@@ -133,6 +133,60 @@ final class Notices extends Helpers\Singleton {
 
 		// Done
 		return $message;
+	}
+
+
+
+	/**
+	 * Retrieve plugin name
+	 */
+	private function getPluginName($path) {
+
+		// Check WP function
+		if (!function_exists('get_plugin_data')) {
+			return $this->getPluginRelativePath($path);
+		}
+
+		// Extract data
+		$data = get_plugin_data($path, false);
+		if (empty($data) || !is_array($data) || empty($data['Name'])) {
+			return $this->getPluginRelativePath($path);
+		}
+
+		// Compose title and description
+		$title = '<strong>'.esc_html($data['Name']).'</strong>';
+		if (!empty($data['Description'])) {
+			$title .= '<br />'.esc_html($data['Description']);
+		}
+
+		// Done
+		return $title;
+	}
+
+
+
+	/**
+	 * From full path to relative to the plugins directory path
+	 */
+	private function getPluginRelativePath($path) {
+
+		// Expected path
+		$prefix = WP_PLUGIN_DIR.'/';
+		$prefixLength = strlen($prefix);
+
+		// Check path start
+		if (0 !== strpos($path, $prefix)) {
+			return $path;
+		}
+
+		// Set relative
+		$relativePath = substr($path, $prefixLength);
+		if (empty($relativePath)) {
+			return $path;
+		}
+
+		// Done
+		return $relativePath;
 	}
 
 
