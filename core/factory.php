@@ -53,4 +53,13 @@ class Factory extends Helpers\Factory {
 
 
 
+	/**
+	 * Plugin notices object
+	 */
+	protected function createNotices() {
+		return Plugin\Notices::instance($this->plugin);
+	}
+
+
+
 }

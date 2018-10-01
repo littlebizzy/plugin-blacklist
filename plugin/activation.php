@@ -31,7 +31,7 @@ final class Activation extends Helpers\Singleton {
 	 */
 	private function hooks() {
 		add_action('activate_plugin', [$this, 'onActivation'], 10 ,2);
-		// deactivation also to remove the future  ...
+		//add_action('deactivate_plugin', [$this, 'onDeactivation'], 10 ,2);
 	}
 
 
@@ -61,40 +61,35 @@ final class Activation extends Helpers\Singleton {
 		// No more checks in this thread
 		update_option('plblst_check_activation', '', true);
 
-		// Update the plugins list
-		$disabler = $this->plugin->factory->disabler();
-		$disabler->update();
+		// Create the notices object
+		$this->plugin->factory->notices();
 
-		// Add the notices
-		if (!empty($disabler->deactivated())) {
-			add_action('admin_notices', [$this, 'notices']);
-		}
+		// Update the plugins list by path
+		$disabler = $this->plugin->factory->disabler();
+		$disabler->byPath();
+
+		// Save future
+		update_option('plblst_future_plugins', $disabler->future(), true);
+
+		// Second round
+		add_action('plugins_loaded', [$this, 'onPluginsLoaded']);
 	}
 
 
 
 	/**
-	 * Show notices for deactivated plugins
+	 * Check plugins after loading
 	 */
-	public function notices() {
+	public function onPluginsLoaded() {
 
-		// Check deactivated
+		// Now find in code
 		$disabler = $this->plugin->factory->disabler();
-		if (empty($disabler->deactivated())) {
-			return;
-		}
+		$disabler->byCode();
 
-		?><div class="notice notice-error is-dismissible">
-
-			<p>Plugin not allowed</p>
-
-			<?php print_r($disabler->deactivated()); ?>
-
-		</div>
-
-		<style>#message { display: none; }</style><?php
-
+		// Save again future
+		update_option('plblst_future_plugins', $disabler->future(), true);
 	}
+
 
 
 }
