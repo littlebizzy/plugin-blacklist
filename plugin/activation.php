@@ -27,7 +27,7 @@ final class Activation extends Helpers\Singleton {
 	 * Pseudo constructor
 	 */
 	protected function onConstruct() {
-		$this->hooks()
+		$this->hooks();
 		$this->check();
 	}
 
@@ -57,7 +57,7 @@ final class Activation extends Helpers\Singleton {
 	/**
 	 * Checks last activation
 	 */
-	private function checks() {
+	private function check() {
 
 		// Activation flag
 		$activation = get_option('plblst_check_activation');
