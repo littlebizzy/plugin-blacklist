@@ -54,16 +54,16 @@ class Factory extends Helpers\Factory {
 
 
 	/**
-	 * Plugin notices object
+	 * Admin notices object
 	 */
 	protected function createNotices() {
-		return Plugin\Notices::instance($this->plugin);
+		return Plugin\Admin::instance($this->plugin);
 	}
 
 
 
 	/**
-	 * Plugin check object
+	 * Plugin checker object
 	 */
 	protected function createChecker() {
 		return Plugin\Checker::instance($this->plugin);

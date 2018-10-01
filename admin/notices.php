@@ -1,7 +1,7 @@
 <?php
 
 // Subpackage namespace
-namespace LittleBizzy\PluginBlacklist\Plugin;
+namespace LittleBizzy\PluginBlacklist\Admin;
 
 // Aliased namespaces
 use \LittleBizzy\PluginBlacklist\Helpers;
@@ -10,7 +10,7 @@ use \LittleBizzy\PluginBlacklist\Helpers;
  * Notices class
  *
  * @package Plugin Blacklist
- * @subpackage Plugin
+ * @subpackage Admin
  */
 final class Notices extends Helpers\Singleton {
 
