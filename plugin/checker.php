@@ -27,8 +27,19 @@ final class Checker extends Helpers\Singleton {
 		// Save future data
 		$this->saveFuture();
 
-		// Second round
-		add_action('plugins_loaded', [$this, 'onPluginsLoaded']);
+		// Check cron mode
+		if (defined('DOING_CRON') && DOING_CRON) {
+
+			// Already executed the plugins_loaded hook,
+			// so we can call directly this function.
+			$this->onPluginsLoaded();
+
+		// Normal mode
+		} else {
+
+			// Second round
+			add_action('plugins_loaded', [$this, 'onPluginsLoaded']);
+		}
 	}
 
 
