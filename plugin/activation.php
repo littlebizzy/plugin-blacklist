@@ -17,13 +17,6 @@ final class Activation extends Helpers\Singleton {
 
 
 	/**
-	 * Plugins deactivated
-	 */
-	private $deactivated;
-
-
-
-	/**
 	 * Pseudo constructor
 	 */
 	protected function onConstruct() {
@@ -69,25 +62,37 @@ final class Activation extends Helpers\Singleton {
 		update_option('plblst_check_activation', '', true);
 
 		// Update the plugins list
-		$this->deactivated = $this->plugin->factory->disabler()->update();
+		$disabler = $this->plugin->factory->disabler();
+		$disabler->update();
 
 		// Add the notices
-		if (!empty($this->deactivated) && is_array($this->deactivated)) {
+		if (!empty($disabler->deactivated())) {
 			add_action('admin_notices', [$this, 'notices']);
 		}
 	}
 
 
 
+	/**
+	 * Show notices for deactivated plugins
+	 */
 	public function notices() {
+
+		// Check deactivated
+		$disabler = $this->plugin->factory->disabler();
+		if (empty($disabler->deactivated())) {
+			return;
+		}
 
 		?><div class="notice notice-error is-dismissible">
 
 			<p>Plugin not allowed</p>
 
-			<?php print_r($this->deactivated); ?>
+			<?php print_r($disabler->deactivated()); ?>
 
-		</div><?php
+		</div>
+
+		<style>#message { display: none; }</style><?php
 
 	}
 

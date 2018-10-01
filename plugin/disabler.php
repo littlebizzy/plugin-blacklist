@@ -17,9 +17,36 @@ final class Disabler extends Helpers\Singleton {
 
 
 	/**
+	 * Deactivated plugins
+	 */
+	private $future;
+	private $deactivated;
+
+
+
+	/**
+	 * Pseudo constructor
+	 */
+	protected function onConstruct() {
+		$this->future = [];
+		$this->deactivated = [];
+	}
+
+
+
+	/**
 	 * Update the plugins list
 	 */
 	public function update($cron = false) {
+
+		// Cache flag
+		static $updated;
+		if (isset($updated)) {
+			return;
+		}
+
+		// Set status
+		$updated = true;
 
 		// Retrieve active plugins
 		$plugins = wp_get_active_and_valid_plugins();
@@ -32,19 +59,33 @@ final class Disabler extends Helpers\Singleton {
 
 		// Initialize
 		$allowed = [];
-		$deactivated = [];
+
+		// Expected path
+		$prefix = WP_PLUGIN_DIR.'/';
+		$prefixLength = strlen($prefix);
 
 		// Enum plugins paths
 		foreach ($plugins as $path) {
 
+			// Check path start
+			if (0 !== strpos($path, $prefix)) {
+				continue;
+			}
+
+			// Set relative
+			$relativePath = substr($path, $prefixLength);
+			if (empty($relativePath)) {
+				continue;
+			}
+
 			// Compare with blaclist
-			if (false !== stripos($path, '404-to-homepage')) {
+			if (false !== stripos('/'.$relativePath, '404-to-homepage')) {
 
 				// Check file
 				if (@file_exists($path)) {
 
 					// Detected
-					$deactivated[] = $path;
+					$this->deactivated[] = $path;
 
 					// Next
 					continue;
@@ -52,11 +93,11 @@ final class Disabler extends Helpers\Singleton {
 			}
 
 			// Allowed
-			$allowed[] = $path;
+			$allowed[] = $relativePath;
 		}
 
 		// Check matches
-		if (empty($deactivated)) {
+		if (empty($this->deactivated)) {
 			return false;
 		}
 
@@ -64,7 +105,16 @@ final class Disabler extends Helpers\Singleton {
 		update_option('active_plugins', $allowed);
 
 		// Done
-		return $deactivated;
+		return true;
+	}
+
+
+
+	/**
+	 * Return deactivated plugins
+	 */
+	public function deactivated() {
+		return $this->deactivated;
 	}
 
 
