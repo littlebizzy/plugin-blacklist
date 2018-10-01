@@ -4,6 +4,7 @@
 namespace LittleBizzy\PluginBlacklist\Core;
 
 // Aliased namespaces
+use \LittleBizzy\PluginBlacklist\Admin;
 use \LittleBizzy\PluginBlacklist\Plugin;
 use \LittleBizzy\PluginBlacklist\Helpers;
 
@@ -57,7 +58,7 @@ class Factory extends Helpers\Factory {
 	 * Admin notices object
 	 */
 	protected function createNotices() {
-		return Plugin\Admin::instance($this->plugin);
+		return Admin\Notices::instance($this->plugin);
 	}
 
 
