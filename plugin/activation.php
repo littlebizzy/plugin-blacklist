@@ -41,7 +41,7 @@ final class Activation extends Helpers\Singleton {
 	 */
 	public function onChange($plugin, $network_wide) {
 		if (!$network_wide) {
-			update_option('plblst_check_changes', '1', true);
+			update_option($this->plugin->prefix.'_check_changes', '1', true);
 		}
 	}
 
@@ -53,40 +53,16 @@ final class Activation extends Helpers\Singleton {
 	private function check() {
 
 		// Activation flag
-		$changes = get_option('plblst_check_changes');
+		$changes = get_option($this->plugin->prefix.'_check_changes');
 		if (empty($changes)) {
 			return;
 		}
 
 		// No more checks in this thread
-		update_option('plblst_check_changes', '', true);
+		update_option($this->plugin->prefix.'_check_changes', '', true);
 
-		// Update the plugins list by path
-		$disabler = $this->plugin->factory->disabler();
-		$disabler->byPath();
-
-		// Save future
-		update_option('plblst_future_plugins', $disabler->future(), true);
-		update_option('plblst_future_message', $disabler->futureMessage(), true);
-
-		// Second round
-		add_action('plugins_loaded', [$this, 'onPluginsLoaded']);
-	}
-
-
-
-	/**
-	 * Check plugins after loading
-	 */
-	public function onPluginsLoaded() {
-
-		// Now find in code
-		$disabler = $this->plugin->factory->disabler();
-		$disabler->byCode();
-
-		// Save again future
-		update_option('plblst_future_plugins', $disabler->future(), true);
-		update_option('plblst_future_message', $disabler->futureMessage(), true);
+		// Start the checker
+		$this->plugin->factory->checker();
 	}
 
 

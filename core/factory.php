@@ -62,4 +62,13 @@ class Factory extends Helpers\Factory {
 
 
 
+	/**
+	 * Plugin check object
+	 */
+	protected function createChecker() {
+		return Plugin\Checker::instance($this->plugin);
+	}
+
+
+
 }

@@ -92,7 +92,7 @@ final class Notices extends Helpers\Singleton {
 		}
 
 		// Future deactivated plugins
-		$future = get_option('plblst_future_plugins');
+		$future = get_option($this->plugin->prefix.'_future_plugins');
 		if (!empty($future) && is_array($future)) {
 			foreach ($future as $path) {
 				if (@file_exists($path)) {
@@ -122,7 +122,7 @@ final class Notices extends Helpers\Singleton {
 
 		// Future deactivation
 		if ('future' == $type) {
-			$message = get_option('plblst_future_message');
+			$message = get_option($this->plugin->prefix.'_future_message');
 			if (empty($message)) {
 				$message = 'The following plugins will be deactivated shortly:';
 			}
