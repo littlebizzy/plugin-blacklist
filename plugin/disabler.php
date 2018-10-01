@@ -25,6 +25,13 @@ final class Disabler extends Helpers\Singleton {
 
 
 	/**
+	 * Current plugins
+	 */
+	private $plugins;
+
+
+
+	/**
 	 * Pseudo constructor
 	 */
 	protected function onConstruct() {
@@ -35,27 +42,43 @@ final class Disabler extends Helpers\Singleton {
 
 
 	/**
-	 * Update the plugins list
+	 * Look for blacklisted paths and updates the plugin list
 	 */
-	public function update($cron = false) {
+	public function byPath() {
 
 		// Cache flag
 		static $updated;
 		if (isset($updated)) {
-			return;
+			return false;
 		}
 
 		// Set status
 		$updated = true;
 
 		// Retrieve active plugins
-		$plugins = wp_get_active_and_valid_plugins();
-		if (empty($plugins) || !is_array($plugins)) {
+		if (!isset($this->plugins)) {
+			$this->plugins = wp_get_active_and_valid_plugins();
+		}
+
+		// Check active plugins
+		if (empty($this->plugins) || !is_array($this->plugins)) {
 			return false;
 		}
 
 		// Get the blacklist
-		// ... $blacklist = $this->plugin->factory->blacklist()->read();
+		if (false === ($blacklist = $this->plugin->factory->blacklist()->read())) {
+			return false;
+		}
+
+		// Prepare blacklist
+		if (empty($blacklist['path']) || !is_array($blacklist['path'])) {
+			$blacklist['path'] = [];
+		}
+
+		// Prepare future
+		if (empty($blacklist['path future']) || !is_array($blacklist['path future'])) {
+			$blacklist['path future'] = [];
+		}
 
 		// Initialize
 		$allowed = [];
@@ -65,7 +88,10 @@ final class Disabler extends Helpers\Singleton {
 		$prefixLength = strlen($prefix);
 
 		// Enum plugins paths
-		foreach ($plugins as $path) {
+		foreach ($this->plugins as $path) {
+
+
+			/* Validation */
 
 			// Check path start
 			if (0 !== strpos($path, $prefix)) {
@@ -78,22 +104,66 @@ final class Disabler extends Helpers\Singleton {
 				continue;
 			}
 
-			// Compare with blaclist
-			if (false !== stripos('/'.$relativePath, '404-to-homepage')) {
 
-				// Check file
-				if (@file_exists($path)) {
+			/* By Path blacklist */
 
-					// Detected
-					$this->deactivated[] = $path;
+			// Find in blacklist
+			$match = false;
+			foreach ($blacklist['path'] as $item => $enabled) {
 
-					// Next
+				// Check item enabled
+				if (!$enabled) {
 					continue;
+				}
+
+				// Find in blacklist path
+				if (false !== strpos('/'.$relativePath, $item)) {
+
+					// Check file
+					if (@file_exists($path)) {
+
+						// Matched
+						$match = true;
+
+						// Detected
+						$this->deactivated[] = $path;
+
+						// Done
+						break;
+					}
 				}
 			}
 
-			// Allowed
-			$allowed[] = $relativePath;
+			// Check if allowed
+			if (!$match) {
+				$allowed[] = $relativePath;
+			}
+
+
+			/* Future blacklist */
+
+			// Find in blacklist future
+			foreach ($blacklist['path future'] as $item => $enabled) {
+
+				// Check item enabled
+				if (!$enabled) {
+					continue;
+				}
+
+				// Find in blacklist path
+				if (false !== strpos('/'.$relativePath, $item)) {
+
+					// Check file
+					if (@file_exists($path)) {
+
+						// Detected
+						$this->future[] = $path;
+
+						// Done
+						break;
+					}
+				}
+			}
 		}
 
 		// Check matches
@@ -102,6 +172,7 @@ final class Disabler extends Helpers\Singleton {
 		}
 
 		// Update plugins
+		$this->plugins = $allowed;
 		update_option('active_plugins', $allowed);
 
 		// Done
@@ -111,10 +182,30 @@ final class Disabler extends Helpers\Singleton {
 
 
 	/**
+	 * Look for blacklisted functions and classes and updates the plugin list
+	 */
+	public function byCode() {
+
+
+
+	}
+
+
+
+	/**
 	 * Return deactivated plugins
 	 */
 	public function deactivated() {
 		return $this->deactivated;
+	}
+
+
+
+	/**
+	 * Return future plugins
+	 */
+	public function future() {
+		return $this->future;
 	}
 
 
