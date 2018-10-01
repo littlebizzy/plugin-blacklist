@@ -25,9 +25,8 @@ final class Checker extends Helpers\Singleton {
 		$disabler = $this->plugin->factory->disabler();
 		$disabler->byPath();
 
-		// Save future
-		update_option($this->plugin->prefix.'_future_plugins', $disabler->future(), true);
-		update_option($this->plugin->prefix.'_future_message', $disabler->futureMessage(), true);
+		// Save future data
+		$this->saveFuture();
 
 		// Second round
 		add_action('plugins_loaded', [$this, 'onPluginsLoaded']);
@@ -45,6 +44,15 @@ final class Checker extends Helpers\Singleton {
 		$disabler->byCode();
 
 		// Save again future
+		$this->saveFuture();
+	}
+
+
+
+	/**
+	 * Save future data and message
+	 */
+	private function saveFuture() {
 		update_option($this->plugin->prefix.'_future_plugins', $disabler->future(), true);
 		update_option($this->plugin->prefix.'_future_message', $disabler->futureMessage(), true);
 	}
