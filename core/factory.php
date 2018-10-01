@@ -39,7 +39,7 @@ class Factory extends Helpers\Factory {
 	 * Plugin blacklist object
 	 */
 	protected function createBlacklist() {
-		return new Plugin\Blacklist::instance($this->plugin);
+		return Plugin\Blacklist::instance($this->plugin);
 	}
 
 
