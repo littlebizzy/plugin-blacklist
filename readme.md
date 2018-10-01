@@ -1,6 +1,6 @@
 # Plugin Blacklist
 
-A carefully selected security suite for WordPress that combines only the most effective methods of guarding against hackers and other common attacks.
+Allows web hosts, agencies, or other WordPress site managers to disallow a custom list of plugins from being activated for security or other reasons.
 
 * [Plugin homepage](https://www.littlebizzy.com/plugins/plugin-blacklist)
 * [Free Facebook group](https://www.facebook.com/groups/littlebizzy/)
