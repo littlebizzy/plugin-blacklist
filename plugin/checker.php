@@ -17,13 +17,20 @@ final class Checker extends Helpers\Singleton {
 
 
 	/**
+	 * Disabler object copy
+	 */
+	private $disabler;
+
+
+
+	/**
 	 * Pseudo constructor
 	 */
 	protected function onConstruct() {
 
 		// Update the plugins list by path
-		$disabler = $this->plugin->factory->disabler();
-		$disabler->byPath();
+		$this->disabler = $this->plugin->factory->disabler();
+		$this->disabler->byPath();
 
 		// Save future data
 		$this->saveFuture();
@@ -40,8 +47,7 @@ final class Checker extends Helpers\Singleton {
 	public function onPluginsLoaded() {
 
 		// Now find in code
-		$disabler = $this->plugin->factory->disabler();
-		$disabler->byCode();
+		$this->disabler->byCode();
 
 		// Save again future
 		$this->saveFuture();
@@ -53,8 +59,8 @@ final class Checker extends Helpers\Singleton {
 	 * Save future data and message
 	 */
 	private function saveFuture() {
-		update_option($this->plugin->prefix.'_future_plugins', $disabler->future(), true);
-		update_option($this->plugin->prefix.'_future_message', $disabler->futureMessage(), true);
+		update_option($this->plugin->prefix.'_future_plugins', $this->disabler->future(), true);
+		update_option($this->plugin->prefix.'_future_message', $this->disabler->futureMessage(), true);
 	}
 
 
