@@ -5,6 +5,11 @@
 ;; Active Blacklist ;;
 ;;;;;;;;;;;;;;;;;;;;;;
 
+;; Message for automatically deactivated plugins
+;; This message will appear in the WordPress admin notices section
+[message]
+The following plugins are not allowed and have been disabled:
+
 ;; match any path (case insensitive)
 ;; for exact directory matches use slashes e.g. /revslider/
 [path]
@@ -21,6 +26,11 @@ putRevSlider
 ;;;;;;;;;;;;;;;;;;;;;;
 ;; Future Blacklist ;;
 ;;;;;;;;;;;;;;;;;;;;;;
+
+;; Message for automatically deactivated plugins
+;; This message will appear in the WordPress admin notices section
+[message future]
+The following plugins will be deactivated shortly:
 
 ;; match any path (case insensitive)
 ;; for exact directory matches use slashes e.g. /revslider/
