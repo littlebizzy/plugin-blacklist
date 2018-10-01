@@ -110,7 +110,7 @@ final class Notices extends Helpers\Singleton {
 	private function message($type) {
 
 		if ('deactivated' == $type) {
-			$message = $this->plugin->factory->blacklist()->getSectionFirst('message');
+			$message = $this->plugin->factory->blacklist()->getSectionFirstLine('message');
 			return empty($message)? 'The following plugins are not allowed and have been disabled:' : $message;
 		}
 

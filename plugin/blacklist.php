@@ -106,7 +106,7 @@ final class Blacklist extends Helpers\Singleton {
 	/**
 	 * Retrieve first section line
 	 */
-	public function getSectionFirst($section) {
+	public function getSectionFirstLine($section) {
 
 		// Retrieve data
 		$blacklist = $this->read();

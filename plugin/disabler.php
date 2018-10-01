@@ -68,7 +68,7 @@ final class Disabler extends Helpers\Singleton {
 		}
 
 		// Copy the future message
-		$this->futureMessage = $this->plugin->factory->blacklist()->getSectionFirst('message');
+		$this->futureMessage = $this->plugin->factory->blacklist()->getSectionFirstLine('message');
 
 		// Prepare blacklist
 		if (empty($blacklist['path']) || !is_array($blacklist['path'])) {
