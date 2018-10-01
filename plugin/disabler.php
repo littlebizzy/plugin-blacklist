@@ -19,8 +19,15 @@ final class Disabler extends Helpers\Singleton {
 	/**
 	 * Deactivated plugins
 	 */
-	private $future;
-	private $deactivated;
+	private $future = [];
+	private $deactivated = [];
+
+
+
+	/**
+	 * Future deactivation message
+	 */
+	private $futureMessage = '';
 
 
 
@@ -28,16 +35,6 @@ final class Disabler extends Helpers\Singleton {
 	 * Current plugins
 	 */
 	private $plugins;
-
-
-
-	/**
-	 * Pseudo constructor
-	 */
-	protected function onConstruct() {
-		$this->future = [];
-		$this->deactivated = [];
-	}
 
 
 
@@ -69,6 +66,9 @@ final class Disabler extends Helpers\Singleton {
 		if (false === ($blacklist = $this->plugin->factory->blacklist()->read())) {
 			return false;
 		}
+
+		// Copy the future message
+		$this->futureMessage = $this->plugin->factory->blacklist()->getSectionFirst('message');
 
 		// Prepare blacklist
 		if (empty($blacklist['path']) || !is_array($blacklist['path'])) {
@@ -206,6 +206,15 @@ final class Disabler extends Helpers\Singleton {
 	 */
 	public function future() {
 		return $this->future;
+	}
+
+
+
+	/**
+	 * Future deactivation message
+	 */
+	public function futureMessage() {
+		return $this->futureMessage;
 	}
 
 

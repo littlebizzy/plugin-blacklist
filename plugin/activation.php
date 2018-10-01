@@ -30,8 +30,8 @@ final class Activation extends Helpers\Singleton {
 	 * Start the activation hooks
 	 */
 	private function hooks() {
-		add_action('activate_plugin', [$this, 'onActivation'], 10 ,2);
-		//add_action('deactivate_plugin', [$this, 'onDeactivation'], 10 ,2);
+		add_action('activate_plugin', [$this, 'onChange'], 10 ,2);
+		add_action('deactivate_plugin', [$this, 'onChange'], 10 ,2);
 	}
 
 
@@ -39,30 +39,27 @@ final class Activation extends Helpers\Singleton {
 	/**
 	 * Handle activation event
 	 */
-	public function onActivation($plugin, $network_wide) {
+	public function onChange($plugin, $network_wide) {
 		if (!$network_wide) {
-			update_option('plblst_check_activation', '1', true);
+			update_option('plblst_check_changes', '1', true);
 		}
 	}
 
 
 
 	/**
-	 * Checks last activation
+	 * Check last activation
 	 */
 	private function check() {
 
 		// Activation flag
-		$activation = get_option('plblst_check_activation');
-		if (empty($activation)) {
+		$changes = get_option('plblst_check_changes');
+		if (empty($changes)) {
 			return;
 		}
 
 		// No more checks in this thread
-		update_option('plblst_check_activation', '', true);
-
-		// Create the notices object
-		$this->plugin->factory->notices();
+		update_option('plblst_check_changes', '', true);
 
 		// Update the plugins list by path
 		$disabler = $this->plugin->factory->disabler();
@@ -70,6 +67,7 @@ final class Activation extends Helpers\Singleton {
 
 		// Save future
 		update_option('plblst_future_plugins', $disabler->future(), true);
+		update_option('plblst_future_message', $disabler->futureMessage(), true);
 
 		// Second round
 		add_action('plugins_loaded', [$this, 'onPluginsLoaded']);
@@ -88,6 +86,7 @@ final class Activation extends Helpers\Singleton {
 
 		// Save again future
 		update_option('plblst_future_plugins', $disabler->future(), true);
+		update_option('plblst_future_message', $disabler->futureMessage(), true);
 	}
 
 

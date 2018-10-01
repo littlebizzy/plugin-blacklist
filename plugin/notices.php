@@ -17,6 +17,14 @@ final class Notices extends Helpers\Singleton {
 
 
 	/**
+	 * Detected plugins
+	 */
+	private $future = [];
+	private $deactivated = [];
+
+
+
+	/**
 	 * Pseudo constructor
 	 */
 	protected function onConstruct() {
@@ -25,28 +33,94 @@ final class Notices extends Helpers\Singleton {
 
 
 
+	/**
+	 * Show notices for deactivated plugins
+	 */
+	public function notices() {
+
+		// Collect data
+		$this->init();
+
+		// Deactivated plugins
+		if (!empty($this->deactivated)) : ?>
+
+			<style>#message { display: none; }</style>
+
+			<div class="notice notice-error is-dismissible">
+
+				<p><?php echo esc_html($this->message('deactivated')); ?></p>
+
+				<ul>
+					<li><?php echo implode('</li><li>', array_map('esc_html', $this->deactivated)); ?></li>
+				</ul>
+
+			</div><?php
+
+		endif;
+
+		// Future plugins
+		if (!empty($this->future)) : ?>
+
+			<div class="notice notice-error is-dismissible">
+
+				<p><?php echo esc_html($this->message('future')); ?></p>
+
+				<ul>
+					<li><?php echo implode('</li><li>', array_map('esc_html', $this->future)); ?></li>
+				</ul>
+
+			</div><?php
+
+		endif;
+	}
 
 
 
 	/**
-	 * Show notices for deactivated plugins
+	 * Initialize detected plugins and prepare to show it
 	 */
-	public function deactivated() {
+	private function init() {
 
-		// Check deactivated
-		if (empty($this->deactivated)) {
-			return;
+		// Detected deactivated plugins
+		$deactivated = $this->plugin->factory->disabler()->deactivated();
+		if (!empty($deactivated)) {
+			foreach ($deactivated as $path) {
+				if (@file_exists($path)) {
+					$this->deactivated[] = $path;
+				}
+			}
 		}
 
-		?><style>#message { display: none; }</style>
+		// Future deactivated plugins
+		$future = get_option('plblst_future_plugins');
+		if (!empty($future) && is_array($future)) {
+			foreach ($future as $path) {
+				if (@file_exists($path)) {
+					$this->future[] = $path;
+				}
+			}
+		}
+	}
 
-		<div class="notice notice-error is-dismissible">
 
-			<p>Plugins not allowed</p>
 
-			<?php print_r($disabler->deactivated()); ?>
+	/**
+	 * Retrieve the config message
+	 */
+	private function message($type) {
 
-		</div><?php
+		if ('deactivated' == $type) {
+			$message = $this->plugin->factory->blacklist()->getSectionFirst('message');
+			return empty($message)? 'The following plugins are not allowed and have been disabled:' : $message;
+		}
+
+		if ('future' == $type) {
+			$message = get_option('plblst_future_message');
+			return empty($message)? 'The following plugins will be deactivated shortly:' : $message;
+		}
+
+		// Error
+		return '';
 	}
 
 

@@ -29,6 +29,15 @@ final class Core extends Helpers\Singleton {
 
 		// Check plugin activation
 		$this->plugin->factory->activation();
+
+		// Admin notices
+		if (is_admin()) {
+
+			// Avoid AJAX requests
+			if (!(defined('DOING_AJAX') && DOING_AJAX)) {
+				$this->plugin->factory->notices();
+			}
+		}
 	}
 
 

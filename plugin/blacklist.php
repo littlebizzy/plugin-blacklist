@@ -103,4 +103,31 @@ final class Blacklist extends Helpers\Singleton {
 
 
 
+	/**
+	 * Retrieve first section line
+	 */
+	public function getSectionFirst($section) {
+
+		// Retrieve data
+		$blacklist = $this->read();
+		if (empty($blacklist) || !is_array($blacklist)) {
+			return null;
+		}
+
+		// Check section
+		if (empty($blacklist[$section]) || !is_array($blacklist[$section])) {
+			return null;
+		}
+
+		// Enum section
+		foreach ($blacklist[$section] as $item => $value) {
+			return $item;
+		}
+
+		// Error
+		return '';
+	}
+
+
+
 }
