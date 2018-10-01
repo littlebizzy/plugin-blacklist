@@ -5,7 +5,7 @@
 ;; Active Blacklist ;;
 ;;;;;;;;;;;;;;;;;;;;;;
 
-;; Message for automatically deactivated plugins
+;; Message for automatically deactivated plugins (multiple lines allowed)
 ;; This message will appear in the WordPress admin notices section
 [message]
 The following plugins are not allowed and have been disabled:
@@ -27,7 +27,7 @@ putRevSlider
 ;; Future Blacklist ;;
 ;;;;;;;;;;;;;;;;;;;;;;
 
-;; Message for automatically deactivated plugins
+;; Message for automatically deactivated plugins (multiple lines allowed)
 ;; This message will appear in the WordPress admin notices section
 [message future]
 The following plugins will be deactivated shortly:
