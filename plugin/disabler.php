@@ -208,6 +208,11 @@ final class Disabler extends Helpers\Singleton {
 		$this->functions($blacklist['functions'], $directories);
 		$this->functions($blacklist['functions future'], $directoriesFuture);
 
+		// Abort if no directories involved
+		if (empty($directories) && empty($directoriesFuture)) {
+			return false;
+		}
+
 
 		/* Cast plugin paths to relative paths */
 
@@ -283,18 +288,28 @@ final class Disabler extends Helpers\Singleton {
 		}
 
 
-		/* Save plugins */
-
-		// Prepare allowed
-		$allowed = [];
-		foreach ($pluginsRel as $relativePath => $path) {
-			if (!in_array($path, $this->deactivated)) {
-				$allowed[] = $relativePath;
-			}
+		// Abort if no intermediate results
+		if (empty($this->future) && empty($this->deactivated)) {
+			return false;
 		}
 
-		// Update plugins
-		update_option('active_plugins', $allowed);
+
+		/* Save plugins by path */
+
+		// Check deactivated plugins
+		if (!empty($this->deactivated)) {
+
+			// Prepare allowed
+			$allowed = [];
+			foreach ($pluginsRel as $relativePath => $path) {
+				if (!in_array($path, $this->deactivated)) {
+					$allowed[] = $relativePath;
+				}
+			}
+
+			// Update plugins
+			update_option('active_plugins', $allowed);
+		}
 
 		// Done
 		return true;
