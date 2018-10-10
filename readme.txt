@@ -7,7 +7,7 @@ Requires at least: 4.4
 Tested up to: 4.9
 Requires PHP: 7.2
 Multisite support: No
-Stable tag: 1.0.0
+Stable tag: 1.0.1
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 Prefix: PLBLST
@@ -44,11 +44,13 @@ Both the Active and Future blacklists have a message that can be customized with
 
 If for some reason a plugin gets activated but is blacklisted, WP Cron will automatically de-activate it each 1x hour.
 
-Notes from developer 1.0.0:
+Notes from developer 1.0.x:
 
 * there is a special treatment of the blacklist.txt ini file to avoid common format pitfalls at parsing time, but let me know if you see any unexpected behavior.
 
 * there is also support for cron events, doing the same verifications of the plugins activation/deactivation section.
+
+* it only looks for source code from "normal" plugins directory, once the plugin to be deactivated/future has been located, it checks that the plugin path is under the wp-content/plugins directory (using the proper WP constant), so it does not affect to mu-plugins or theme directories/functions/classes.
 
 #### Compatibility ####
 
@@ -181,6 +183,9 @@ There is a settings page where you can exclude certain types of query strings.
 Please avoid leaving negative reviews in order to get a feature implemented. Instead, we kindly ask that you post your feedback on the wordpress.org support forums by tagging this plugin in your post. If needed, you may also contact our homepage.
 
 == Changelog ==
+
+= 1.0.1 =
+* minor performance improvements during the "by code" plugin detection, avoiding the WP active_plugins options update when no banned plugins detected by functions or classes
 
 = 1.0.0 =
 * initial release
