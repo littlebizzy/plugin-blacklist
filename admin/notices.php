@@ -21,6 +21,7 @@ final class Notices extends Helpers\Singleton {
 	 */
 	private $future = [];
 	private $deactivated = [];
+	private $pause = [];
 
 
 
@@ -72,6 +73,21 @@ final class Notices extends Helpers\Singleton {
 			</div><?php
 
 		endif;
+
+		// Pause plugins
+		if (!empty($this->pause)) : ?>
+
+			<div class="notice notice-info">
+
+				<p><?php echo $this->message('pause'); ?></p>
+
+				<ul>
+					<li><?php echo implode('</li><li>', $this->pause); ?></li>
+				</ul>
+
+			</div><?php
+
+		endif;
 	}
 
 
@@ -100,6 +116,16 @@ final class Notices extends Helpers\Singleton {
 				}
 			}
 		}
+
+		// Detected plugins for pause
+		$pause = get_option($this->plugin->prefix.'_pause_plugins');
+		if (!empty($pause) && is_array($pause)) {
+			foreach ($pause as $path) {
+				if (@file_exists($path)) {
+					$this->$pause[] = $this->getPluginName($path);
+				}
+			}
+		}
 	}
 
 
@@ -118,13 +144,20 @@ final class Notices extends Helpers\Singleton {
 			if (empty($message)) {
 				$message = 'The following plugins are not allowed and have been disabled:';
 			}
-		}
+
 
 		// Future deactivation
-		if ('future' == $type) {
+		} elseif ('future' == $type) {
 			$message = get_option($this->plugin->prefix.'_future_message');
 			if (empty($message)) {
 				$message = 'The following plugins will be deactivated shortly:';
+			}
+
+		// Pause plugins
+		} elseif ('pause') {
+			$message = get_option($this->plugin->prefix.'_pause_message');
+			if (empty($message)) {
+				$message = 'The following utility plugins should be deactivated after use to save resources:';
 			}
 		}
 

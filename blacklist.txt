@@ -1,7 +1,7 @@
 ;; Example blacklist.txt file
 
 ;; Plugin Blacklist: https://github.com/littlebizzy/plugin-blacklist
-;; This file must be placed in the wp-content directory (e.g. /wp-content/blacklist.txt)
+;; This file must be placed in the wp-content directory (e.g. wp-content/blacklist.txt)
 
 ;;;;;;;;;;;;;;;;;;;;;;
 ;; Active Blacklist ;;
@@ -43,3 +43,22 @@ The following plugins will be deactivated shortly:
 
 ;; match exact function names (case sensitive)
 [functions future]
+
+;;;;;;;;;;;;;;;;;;;;;
+;; Pause Blacklist ;;
+;;;;;;;;;;;;;;;;;;;;;
+
+;; Message for plugins that should be deactivated when not in use (multiple lines allowed)
+;; This message will appear in the WordPress admin notices section
+[message pause]
+The following utility plugins should be deactivated when not in use for better performance and security:
+
+;; match any path (case insensitive)
+;; for exact directory matches use slashes e.g. /revslider/
+[path pause]
+
+;; match exact class names (case sensitive)
+[classes pause]
+
+;; match exact function names (case sensitive)
+[functions pause]

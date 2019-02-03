@@ -24,8 +24,8 @@ final class Checker extends Helpers\Singleton {
 		// Update the plugins list by path
 		$this->plugin->factory->disabler()->byPath();
 
-		// Save future data
-		$this->saveFuture();
+		// Save future and pause data
+		$this->saveFutureAndPause();
 
 		// Check cron mode
 		if (defined('DOING_CRON') && DOING_CRON) {
@@ -52,18 +52,20 @@ final class Checker extends Helpers\Singleton {
 		// Now find in code
 		$this->plugin->factory->disabler()->byCode();
 
-		// Save again future
-		$this->saveFuture();
+		// Save again future and pause
+		$this->saveFutureAndPause();
 	}
 
 
 
 	/**
-	 * Save future data and message
+	 * Save future and pause data and message
 	 */
-	private function saveFuture() {
+	private function saveFutureAndPause() {
 		update_option($this->plugin->prefix.'_future_plugins', $this->plugin->factory->disabler()->future(), true);
 		update_option($this->plugin->prefix.'_future_message', $this->plugin->factory->disabler()->futureMessage(), true);
+		update_option($this->plugin->prefix.'_pause_plugins', $this->plugin->factory->disabler()->pause(), true);
+		update_option($this->plugin->prefix.'_pause_message', $this->plugin->factory->disabler()->pauseMessage(), true);
 	}
 
 

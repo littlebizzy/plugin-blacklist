@@ -17,17 +17,19 @@ final class Disabler extends Helpers\Singleton {
 
 
 	/**
-	 * Deactivated plugins
+	 * Plugins stacks
 	 */
 	private $future = [];
 	private $deactivated = [];
+	private $pause = [];
 
 
 
 	/**
-	 * Future deactivation message
+	 * Future and pause messages
 	 */
 	private $futureMessage = '';
+	private $pauseMessage = '';
 
 
 
@@ -65,11 +67,12 @@ final class Disabler extends Helpers\Singleton {
 			return false;
 		}
 
-		// Copy the future message
+		// Copy the future and pause messages
 		$this->futureMessage = $this->plugin->factory->blacklist()->getSectionString('message future');
+		$this->pauseMessage = $this->plugin->factory->blacklist()->getSectionString('message pause');
 
 		// Prepare blacklist items
-		$keys = ['path', 'path future'];
+		$keys = ['path', 'path future', 'path pause'];
 		foreach ($keys as $key) {
 			if (empty($blacklist[$key]) || !is_array($blacklist[$key])) {
 				$blacklist[$key] = [];
@@ -150,6 +153,32 @@ final class Disabler extends Helpers\Singleton {
 					}
 				}
 			}
+
+
+			/* Pause blacklist */
+
+			// Find in blacklist future
+			foreach ($blacklist['path pause'] as $key => $item) {
+
+				// Find in blacklist path
+				if (false !== strpos('/'.$relativePath, $item)) {
+
+					// Check file
+					if (@file_exists($path)) {
+
+						// Do not add deactivated or future plugins
+						if (!in_array($path, $this->deactivated) &&
+							!in_array($path, $this->future)) {
+
+							// Detected
+							$this->pause[] = $path;
+						}
+
+						// Done
+						break;
+					}
+				}
+			}
 		}
 
 		// Check matches
@@ -186,7 +215,7 @@ final class Disabler extends Helpers\Singleton {
 		$this->futureMessage = $this->plugin->factory->blacklist()->getSectionString('message future');
 
 		// Prepare blacklist items
-		$keys = ['classes', 'functions', 'classes future', 'functions future'];
+		$keys = ['classes', 'functions', 'classes future', 'functions future', 'classes pause', 'functions pause'];
 		foreach ($keys as $key) {
 			if (empty($blacklist[$key]) || !is_array($blacklist[$key])) {
 				$blacklist[$key] = [];
@@ -199,17 +228,20 @@ final class Disabler extends Helpers\Singleton {
 		// Plugin directories
 		$directories = [];
 		$directoriesFuture = [];
+		$directoriesPause = [];
 
 		// Check classes
 		$this->classes($blacklist['classes'], $directories);
 		$this->classes($blacklist['classes future'], $directoriesFuture);
+		$this->classes($blacklist['classes pause'], $directoriesPause);
 
 		// Check functions
 		$this->functions($blacklist['functions'], $directories);
 		$this->functions($blacklist['functions future'], $directoriesFuture);
+		$this->functions($blacklist['functions pause'], $directoriesPause);
 
 		// Abort if no directories involved
-		if (empty($directories) && empty($directoriesFuture)) {
+		if (empty($directories) && empty($directoriesFuture) && empty($directoriesPause)) {
 			return false;
 		}
 
@@ -287,9 +319,34 @@ final class Disabler extends Helpers\Singleton {
 			}
 		}
 
+		// Enum directories pause
+		foreach ($directoriesPause as $directory) {
+
+			// Enum plugins
+			foreach ($pluginsRel as $relativePath => $path) {
+
+				// Check path start
+				if (0 === strpos($relativePath, $directory.'/')) {
+
+					// Check if already deactivated or future
+					if (!in_array($path, $this->deactivated) &&
+						!in_array($path, $this->future) &&
+						!in_array($path, $this->pause)) {
+
+						// Check file
+						if (@file_exists($path)) {
+							$this->pause[] = $path;
+						}
+					}
+
+					// Done
+					break;
+				}
+			}
+		}
 
 		// Abort if no intermediate results
-		if (empty($this->future) && empty($this->deactivated)) {
+		if (empty($this->future) && empty($this->deactivated) && empty($this->pause)) {
 			return false;
 		}
 
@@ -424,6 +481,24 @@ final class Disabler extends Helpers\Singleton {
 	 */
 	public function futureMessage() {
 		return $this->futureMessage;
+	}
+
+
+
+	/**
+	 * Return pause plugins
+	 */
+	public function pause() {
+		return $this->pause;
+	}
+
+
+
+	/**
+	 * Pause deactivation message
+	 */
+	public function futureMessage() {
+		return $this->pauseMessage;
 	}
 
 
