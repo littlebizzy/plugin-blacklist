@@ -47,7 +47,7 @@ final class Notices extends Helpers\Singleton {
 
 			<style>#message { display: none; }</style>
 
-			<div class="notice notice-warning">
+			<div class="notice notice-error">
 
 				<p><?php echo $this->message('deactivated'); ?></p>
 
@@ -62,7 +62,7 @@ final class Notices extends Helpers\Singleton {
 		// Future plugins
 		if (!empty($this->future)) : ?>
 
-			<div class="notice notice-info">
+			<div class="notice notice-warning">
 
 				<p><?php echo $this->message('future'); ?></p>
 
