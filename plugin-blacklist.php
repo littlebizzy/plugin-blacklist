@@ -15,8 +15,9 @@ Prefix: PLBLST
 namespace LittleBizzy\PluginBlacklist;
 
 // Block direct calls
-if (!function_exists('add_action'))
+if (!function_exists('add_action')) {
 	die;
+}
 
 // Plugin constants
 const FILE = __FILE__;
