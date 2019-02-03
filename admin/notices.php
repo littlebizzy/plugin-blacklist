@@ -122,7 +122,7 @@ final class Notices extends Helpers\Singleton {
 		if (!empty($pause) && is_array($pause)) {
 			foreach ($pause as $path) {
 				if (@file_exists($path)) {
-					$this->$pause[] = $this->getPluginName($path);
+					$this->pause[] = $this->getPluginName($path);
 				}
 			}
 		}
@@ -144,7 +144,6 @@ final class Notices extends Helpers\Singleton {
 			if (empty($message)) {
 				$message = 'The following plugins are not allowed and have been disabled:';
 			}
-
 
 		// Future deactivation
 		} elseif ('future' == $type) {

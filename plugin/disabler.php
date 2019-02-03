@@ -497,7 +497,7 @@ final class Disabler extends Helpers\Singleton {
 	/**
 	 * Pause deactivation message
 	 */
-	public function futureMessage() {
+	public function pauseMessage() {
 		return $this->pauseMessage;
 	}
 
