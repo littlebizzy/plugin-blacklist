@@ -3,7 +3,7 @@
 Plugin Name: Plugin Blacklist
 Plugin URI: https://www.littlebizzy.com/plugins/plugin-blacklist
 Description: Allows web hosts, agencies, or other WordPress site managers to disallow a custom list of plugins from being activated for security or other reasons.
-Version: 1.0.1
+Version: 1.1.0
 Author: LittleBizzy
 Author URI: https://www.littlebizzy.com
 License: GPLv3
@@ -21,7 +21,7 @@ if (!function_exists('add_action'))
 // Plugin constants
 const FILE = __FILE__;
 const PREFIX = 'plblst';
-const VERSION = '1.0.1';
+const VERSION = '1.1.0';
 
 // Loader
 require_once dirname(FILE).'/helpers/loader.php';
