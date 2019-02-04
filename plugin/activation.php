@@ -61,6 +61,9 @@ final class Activation extends Helpers\Singleton {
 		// No more checks in this thread
 		update_option($this->plugin->prefix.'_check_changes', '', true);
 
+		// Set the checking flag
+		$this->plugin->checking = true;
+
 		// Start the checker
 		$this->plugin->factory->checker();
 	}

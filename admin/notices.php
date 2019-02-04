@@ -98,11 +98,13 @@ final class Notices extends Helpers\Singleton {
 	private function init() {
 
 		// Detected deactivated plugins
-		$deactivated = $this->plugin->factory->disabler()->deactivated();
-		if (!empty($deactivated)) {
-			foreach ($deactivated as $path) {
-				if (@file_exists($path)) {
-					$this->deactivated[] = $this->getPluginName($path);
+		if (!empty($this->plugin->checking)) {
+			$deactivated = $this->plugin->factory->disabler()->deactivated();
+			if (!empty($deactivated)) {
+				foreach ($deactivated as $path) {
+					if (@file_exists($path)) {
+						$this->deactivated[] = $this->getPluginName($path);
+					}
 				}
 			}
 		}
