@@ -1,0 +1,16 @@
+{
+    "name": "littlebizzy/plugin-blacklist",
+    "type": "wordpress-plugin",
+    "license": "GPLv3",
+    "homepage": "https://www.littlebizzy.com/plugins/plugin-blacklist",
+    "description": "Allows web hosts, agencies, or other WordPress site managers to disallow a custom list of plugins from being activated for security or other reasons.",
+    "keywords": ["wordpress","plugin","blacklist","ban","disallow","plugins","security","performance"],
+    "support": {
+        "issues": "https://github.com/littlebizzy/plugin-blacklist/issues",
+        "forum": "https://www.littlebizzy.com/members"
+    }
+    "require": {
+        "php": "^7.2",
+        "composer/installers": "~1.0"
+    }
+}
