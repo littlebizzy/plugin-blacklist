@@ -7,8 +7,11 @@ Allows web hosts, agencies, or other WordPress site managers to disallow a custo
 
 ### Defined Constants
 
-    /* Plugin Meta */
+    /** Plugin Meta */
     define('DISABLE_NAG_NOTICES', true);
+    
+    /** Plugin Blacklist Functions */
+    define('PLUGIN_BLACKLIST', true); // default = true
 
 ### Compatibility
 
