@@ -13,7 +13,7 @@ Prefix: PLBLST
 
 defined( 'ABSPATH' ) || exit; // Prevent direct access
 
-// Load blacklist and graylist from external file
+// Load blacklist, graylist, and utility list from external file
 function pbm_load_blacklist() {
     $file_path = WP_CONTENT_DIR . '/blacklist.txt'; // Path to the externally maintained blacklist file
 
@@ -67,6 +67,27 @@ function pbm_is_plugin_graylisted( string $plugin ): bool {
     return false;
 }
 
+// Check if a plugin is in the utility list
+function pbm_is_plugin_utility( string $plugin ): bool {
+    $blacklist_data = pbm_load_blacklist();
+    $plugin_slug    = dirname( $plugin );
+
+    foreach ( $blacklist_data['utility'] ?? [] as $utility_item ) {
+        // Exact match (wrapped in slashes)
+        if ( strpos( $utility_item, '/' ) === 0 && substr( $utility_item, -1 ) === '/' ) {
+            if ( trim( $utility_item, '/' ) === $plugin_slug ) {
+                return true;
+            }
+        } 
+        // Namespace match
+        else if ( strpos( $plugin_slug, $utility_item ) === 0 ) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 // Prevent activation of blacklisted plugins
 function pbm_prevent_activation( string $plugin ): void {
     if ( pbm_is_plugin_blacklisted( $plugin ) ) {
@@ -76,6 +97,10 @@ function pbm_prevent_activation( string $plugin ): void {
 
     if ( pbm_is_plugin_graylisted( $plugin ) ) {
         add_action( 'admin_notices', 'pbm_show_graylist_warning' );
+    }
+
+    if ( pbm_is_plugin_utility( $plugin ) ) {
+        add_action( 'admin_notices', 'pbm_show_utility_notice' );
     }
 }
 add_action( 'activate_plugin', 'pbm_prevent_activation' );
@@ -91,6 +116,13 @@ function pbm_show_graylist_warning(): void {
 function pbm_show_blacklist_error( string $plugin ): void {
     echo '<div class="notice notice-error is-dismissible">';
     echo '<p>' . sprintf( esc_html__( 'The plugin %s has been deactivated because it is blacklisted.', 'plugin-blacklist-manager' ), esc_html( $plugin ) ) . '</p>';
+    echo '</div>';
+}
+
+// Display an info notice for utility plugins
+function pbm_show_utility_notice(): void {
+    echo '<div class="notice notice-info is-dismissible">';
+    echo '<p>' . esc_html__( 'A utility plugin is active. Please deactivate it when not in use.', 'plugin-blacklist-manager' ) . '</p>';
     echo '</div>';
 }
 
@@ -112,6 +144,10 @@ function pbm_check_and_deactivate_blacklisted_plugins(): void {
 
         if ( pbm_is_plugin_graylisted( $plugin ) && is_admin() ) {
             add_action( 'admin_notices', 'pbm_show_graylist_warning' );
+        }
+
+        if ( pbm_is_plugin_utility( $plugin ) && is_admin() ) {
+            add_action( 'admin_notices', 'pbm_show_utility_notice' );
         }
     }
 }
