@@ -21,8 +21,24 @@ function pbm_load_blacklist() {
         return [];
     }
 
-    $blacklist_data = parse_ini_file( $file_path, true, INI_SCANNER_TYPED );
+    $blacklist_data = @parse_ini_file( $file_path, true, INI_SCANNER_TYPED );
+
+    if ( $blacklist_data === false ) {
+        // Handle error gracefully by logging or notifying admin
+        if ( is_admin() ) {
+            add_action( 'admin_notices', 'pbm_show_ini_error_notice' );
+        }
+        return [];
+    }
+
     return $blacklist_data;
+}
+
+// Display an admin notice if the INI file is not properly formatted
+function pbm_show_ini_error_notice() {
+    echo '<div class="notice notice-error is-dismissible">';
+    echo '<p>' . esc_html__( 'Error: The blacklist.txt file is not properly formatted. Please check for syntax errors.', 'plugin-blacklist-manager' ) . '</p>';
+    echo '</div>';
 }
 
 // Check if a plugin is blacklisted
