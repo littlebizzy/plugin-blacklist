@@ -8,6 +8,9 @@ Author: LittleBizzy
 Author URI: https://www.littlebizzy.com
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
+GitHub Plugin URI: littlebizzy/plugin-blacklist
+Primary Branch: master
+Tested up to: 6.6
 Prefix: PLBLST
 */
 
@@ -41,11 +44,12 @@ function pbm_show_ini_error_notice() {
     echo '</div>';
 }
 
-// Check if a plugin is blacklisted
+// Check if a plugin is blacklisted by folder, class, or function name
 function pbm_is_plugin_blacklisted( string $plugin ): bool {
     $blacklist_data = pbm_load_blacklist();
     $plugin_slug    = dirname( $plugin );
 
+    // Check folder names
     foreach ( $blacklist_data['blacklist'] ?? [] as $blacklisted_item ) {
         // Exact match (wrapped in slashes)
         if ( strpos( $blacklisted_item, '/' ) === 0 && substr( $blacklisted_item, -1 ) === '/' ) {
@@ -59,14 +63,29 @@ function pbm_is_plugin_blacklisted( string $plugin ): bool {
         }
     }
 
+    // Check class names
+    foreach ( $blacklist_data['blacklist classes'] ?? [] as $class_name ) {
+        if ( class_exists( $class_name ) ) {
+            return true;
+        }
+    }
+
+    // Check function names
+    foreach ( $blacklist_data['blacklist functions'] ?? [] as $function_name ) {
+        if ( function_exists( $function_name ) ) {
+            return true;
+        }
+    }
+
     return false;
 }
 
-// Check if a plugin is graylisted
+// Check if a plugin is graylisted by folder, class, or function name
 function pbm_is_plugin_graylisted( string $plugin ): bool {
     $blacklist_data = pbm_load_blacklist();
     $plugin_slug    = dirname( $plugin );
 
+    // Check folder names
     foreach ( $blacklist_data['graylist'] ?? [] as $graylisted_item ) {
         // Exact match (wrapped in slashes)
         if ( strpos( $graylisted_item, '/' ) === 0 && substr( $graylisted_item, -1 ) === '/' ) {
@@ -80,14 +99,29 @@ function pbm_is_plugin_graylisted( string $plugin ): bool {
         }
     }
 
+    // Check class names
+    foreach ( $blacklist_data['graylist classes'] ?? [] as $class_name ) {
+        if ( class_exists( $class_name ) ) {
+            return true;
+        }
+    }
+
+    // Check function names
+    foreach ( $blacklist_data['graylist functions'] ?? [] as $function_name ) {
+        if ( function_exists( $function_name ) ) {
+            return true;
+        }
+    }
+
     return false;
 }
 
-// Check if a plugin is in the utility list
+// Check if a plugin is in the utility list by folder, class, or function name
 function pbm_is_plugin_utility( string $plugin ): bool {
     $blacklist_data = pbm_load_blacklist();
     $plugin_slug    = dirname( $plugin );
 
+    // Check folder names
     foreach ( $blacklist_data['utility'] ?? [] as $utility_item ) {
         // Exact match (wrapped in slashes)
         if ( strpos( $utility_item, '/' ) === 0 && substr( $utility_item, -1 ) === '/' ) {
@@ -97,6 +131,20 @@ function pbm_is_plugin_utility( string $plugin ): bool {
         } 
         // Namespace match
         else if ( strpos( $plugin_slug, $utility_item ) === 0 ) {
+            return true;
+        }
+    }
+
+    // Check class names
+    foreach ( $blacklist_data['utility classes'] ?? [] as $class_name ) {
+        if ( class_exists( $class_name ) ) {
+            return true;
+        }
+    }
+
+    // Check function names
+    foreach ( $blacklist_data['utility functions'] ?? [] as $function_name ) {
+        if ( function_exists( $function_name ) ) {
             return true;
         }
     }
