@@ -11,7 +11,7 @@ License URI: https://www.gnu.org/licenses/gpl-3.0.html
 Prefix: PLBLST
 */
 
-defined( 'ABSPATH' ) || exit;
+defined( 'ABSPATH' ) || exit; // Prevent direct access
 
 // Load blacklist and graylist from external file
 function pbm_load_blacklist() {
@@ -26,13 +26,13 @@ function pbm_load_blacklist() {
 }
 
 // Check if a plugin is blacklisted
-function pbm_is_plugin_blacklisted( $plugin ) {
+function pbm_is_plugin_blacklisted( string $plugin ): bool {
     $blacklist_data = pbm_load_blacklist();
     $plugin_slug    = dirname( $plugin );
 
     foreach ( $blacklist_data['blacklist'] ?? [] as $blacklisted_item ) {
         // Exact match (wrapped in slashes)
-        if ( substr( $blacklisted_item, 0, 1 ) === '/' && substr( $blacklisted_item, -1 ) === '/' ) {
+        if ( strpos( $blacklisted_item, '/' ) === 0 && substr( $blacklisted_item, -1 ) === '/' ) {
             if ( trim( $blacklisted_item, '/' ) === $plugin_slug ) {
                 return true;
             }
@@ -47,13 +47,13 @@ function pbm_is_plugin_blacklisted( $plugin ) {
 }
 
 // Check if a plugin is graylisted
-function pbm_is_plugin_graylisted( $plugin ) {
+function pbm_is_plugin_graylisted( string $plugin ): bool {
     $blacklist_data = pbm_load_blacklist();
     $plugin_slug    = dirname( $plugin );
 
     foreach ( $blacklist_data['graylist'] ?? [] as $graylisted_item ) {
         // Exact match (wrapped in slashes)
-        if ( substr( $graylisted_item, 0, 1 ) === '/' && substr( $graylisted_item, -1 ) === '/' ) {
+        if ( strpos( $graylisted_item, '/' ) === 0 && substr( $graylisted_item, -1 ) === '/' ) {
             if ( trim( $graylisted_item, '/' ) === $plugin_slug ) {
                 return true;
             }
@@ -68,7 +68,7 @@ function pbm_is_plugin_graylisted( $plugin ) {
 }
 
 // Prevent activation of blacklisted plugins
-function pbm_prevent_activation( $plugin ) {
+function pbm_prevent_activation( string $plugin ): void {
     if ( pbm_is_plugin_blacklisted( $plugin ) ) {
         deactivate_plugins( $plugin );
         wp_die( sprintf( __( 'The plugin %s is blacklisted and cannot be activated.', 'plugin-blacklist-manager' ), esc_html( $plugin ) ) );
@@ -81,36 +81,41 @@ function pbm_prevent_activation( $plugin ) {
 add_action( 'activate_plugin', 'pbm_prevent_activation' );
 
 // Display a warning for graylisted plugins
-function pbm_show_graylist_warning() {
+function pbm_show_graylist_warning(): void {
     echo '<div class="notice notice-warning is-dismissible">';
     echo '<p>' . esc_html__( 'A graylisted plugin has been activated. Please be aware that it may be blacklisted in the future.', 'plugin-blacklist-manager' ) . '</p>';
     echo '</div>';
 }
 
-// Deactivate blacklisted plugins on load
-function pbm_deactivate_blacklisted_plugins() {
+// Display an error for blacklisted plugins
+function pbm_show_blacklist_error( string $plugin ): void {
+    echo '<div class="notice notice-error is-dismissible">';
+    echo '<p>' . sprintf( esc_html__( 'The plugin %s has been deactivated because it is blacklisted.', 'plugin-blacklist-manager' ), esc_html( $plugin ) ) . '</p>';
+    echo '</div>';
+}
+
+// Deactivate blacklisted plugins on every page load
+function pbm_check_and_deactivate_blacklisted_plugins(): void {
     $active_plugins = get_option( 'active_plugins', [] );
 
     foreach ( $active_plugins as $plugin ) {
         if ( pbm_is_plugin_blacklisted( $plugin ) ) {
             deactivate_plugins( $plugin );
-            add_action( 'admin_notices', function() use ( $plugin ) {
-                echo '<div class="notice notice-error">';
-                echo '<p>' . sprintf( esc_html__( 'The plugin %s has been deactivated because it is blacklisted.', 'plugin-blacklist-manager' ), esc_html( $plugin ) ) . '</p>';
-                echo '</div>';
-            });
+
+            // Show admin notice only in admin area
+            if ( is_admin() ) {
+                add_action( 'admin_notices', function() use ( $plugin ) {
+                    pbm_show_blacklist_error( $plugin );
+                });
+            }
         }
 
-        if ( pbm_is_plugin_graylisted( $plugin ) ) {
-            add_action( 'admin_notices', function() use ( $plugin ) {
-                echo '<div class="notice notice-warning">';
-                echo '<p>' . sprintf( esc_html__( 'The plugin %s is currently graylisted and may be blacklisted in the future.', 'plugin-blacklist-manager' ), esc_html( $plugin ) ) . '</p>';
-                echo '</div>';
-            });
+        if ( pbm_is_plugin_graylisted( $plugin ) && is_admin() ) {
+            add_action( 'admin_notices', 'pbm_show_graylist_warning' );
         }
     }
 }
-add_action( 'admin_init', 'pbm_deactivate_blacklisted_plugins' );
+add_action( 'init', 'pbm_check_and_deactivate_blacklisted_plugins' );
 
 // Prevent installation of blacklisted plugins
 function pbm_prevent_installation( $result, $hook_extra ) {
@@ -122,7 +127,7 @@ function pbm_prevent_installation( $result, $hook_extra ) {
     $blacklist_data = pbm_load_blacklist();
     foreach ( $blacklist_data['blacklist'] ?? [] as $blacklisted_item ) {
         // Exact match
-        if ( substr( $blacklisted_item, 0, 1 ) === '/' && substr( $blacklisted_item, -1 ) === '/' ) {
+        if ( strpos( $blacklisted_item, '/' ) === 0 && substr( $blacklisted_item, -1 ) === '/' ) {
             if ( trim( $blacklisted_item, '/' ) === $plugin_slug ) {
                 $result['error'] = new WP_Error( 'plugin_blacklisted', __( 'This plugin is blacklisted and cannot be installed.', 'plugin-blacklist-manager' ) );
             }
@@ -138,7 +143,7 @@ function pbm_prevent_installation( $result, $hook_extra ) {
 add_filter( 'upgrader_pre_install', 'pbm_prevent_installation', 10, 2 );
 
 // Enqueue Admin Scripts to Gray Out "Install Now" Button
-function pbm_enqueue_admin_scripts( $hook_suffix ) {
+function pbm_enqueue_admin_scripts( string $hook_suffix ): void {
     if ( 'plugin-install.php' !== $hook_suffix ) {
         return;
     }
