@@ -28,7 +28,37 @@ function pbm_load_blacklist(): array {
         return [];
     }
 
-    $blacklist_data = @parse_ini_file( $file_path, true, INI_SCANNER_TYPED );
+    // Manually read and clean up the INI file
+    $lines = file( $file_path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES );
+    $cleaned_content = '';
+
+    foreach ( $lines as $line ) {
+        $line = trim( $line );
+
+        // Skip full-line comments and empty lines
+        if ( $line === '' || $line[0] === ';' || $line[0] === '#' ) {
+            continue;
+        }
+
+        // Remove trailing comments after values
+        if ( strpos( $line, ';' ) !== false ) {
+            $line = explode( ';', $line, 2 )[0];
+        }
+
+        // Remove trailing comments after values using hash
+        if ( strpos( $line, '#' ) !== false ) {
+            $line = explode( '#', $line, 2 )[0];
+        }
+
+        $line = trim($line); // Trim again to remove any spaces left after removing comments
+
+        if (!empty($line)) {
+            $cleaned_content .= $line . PHP_EOL; // Add cleaned line to content
+        }
+    }
+
+    // Use parse_ini_string instead of parse_ini_file
+    $blacklist_data = parse_ini_string( $cleaned_content, true, INI_SCANNER_TYPED );
 
     if ( $blacklist_data === false ) {
         // Handle error gracefully by logging or notifying admin
