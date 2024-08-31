@@ -67,6 +67,11 @@ function pbm_load_blacklist(): array {
         return [];
     }
 
+    // Check if there is any data loaded in the 'blacklist' section
+    if ( empty( $blacklist_data['blacklist'] ) ) {
+        pbm_show_admin_notice( 'No plugins listed under the [blacklist] section in the blacklist file, or the file is empty.', 'warning' );
+    }
+
     return $blacklist_data;
 }
 
@@ -81,21 +86,6 @@ function pbm_show_admin_notice( string $message, string $type = 'error' ) {
         echo '<div class="notice notice-' . esc_attr( $type ) . '"><p>' . esc_html( $message ) . '</p></div>';
     });
 }
-
-/**
- * Initialize blacklist checks after plugins are loaded.
- */
-function pbm_init_blacklist_checks() {
-    $blacklist_data = pbm_load_blacklist();
-    $blacklisted_plugins = isset( $blacklist_data['blacklist'] ) ? array_values( $blacklist_data['blacklist'] ) : [];
-
-    if ( ! empty( $blacklisted_plugins ) ) {
-        pbm_show_admin_notice( 'Blacklisted plugins loaded: ' . implode( ', ', $blacklisted_plugins ), 'info' );
-    } else {
-        pbm_show_admin_notice( 'No plugins are currently blacklisted or loaded from the file.', 'info' );
-    }
-}
-add_action( 'plugins_loaded', 'pbm_init_blacklist_checks' );
 
 /**
  * Enqueue Inline Script to Disable "Install Now" Button for Blacklisted Plugins.
