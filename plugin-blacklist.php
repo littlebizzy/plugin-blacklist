@@ -25,12 +25,12 @@ function pbm_load_blacklist(): array {
     $file_path = WP_CONTENT_DIR . '/blacklist.txt'; // Path to the externally maintained blacklist file
 
     if ( ! file_exists( $file_path ) ) {
-        pbm_show_admin_notice( 'Blacklist file not found at the expected path: ' . esc_html( $file_path ), 'error' );
+        pbm_add_admin_notice( 'Blacklist file not found at the expected path: ' . esc_html( $file_path ), 'error' );
         return [];
     }
 
     if ( ! is_readable( $file_path ) ) {
-        pbm_show_admin_notice( 'Blacklist file is not readable. Check file permissions for: ' . esc_html( $file_path ), 'error' );
+        pbm_add_admin_notice( 'Blacklist file is not readable. Check file permissions for: ' . esc_html( $file_path ), 'error' );
         return [];
     }
 
@@ -63,27 +63,34 @@ function pbm_load_blacklist(): array {
         }
         fclose( $file );
     } else {
-        pbm_show_admin_notice( 'Failed to open the blacklist file for reading.', 'error' );
+        pbm_add_admin_notice( 'Failed to open the blacklist file for reading.', 'error' );
         return [];
     }
 
     // Check if there is any data loaded in the 'blacklist' section
     if ( empty( $blacklist_data['blacklist'] ) ) {
-        pbm_show_admin_notice( 'No plugins listed under the [blacklist] section in the blacklist file, or the file is empty.', 'warning' );
+        pbm_add_admin_notice( 'No plugins listed under the [blacklist] section in the blacklist file, or the file is empty.', 'warning' );
     }
 
     return $blacklist_data;
 }
 
 /**
- * Show an admin notice in the WordPress dashboard.
+ * Add an admin notice to be displayed in the WordPress dashboard.
  *
  * @param string $message The message to display.
  * @param string $type The type of notice (error, warning, success, info).
  */
-function pbm_show_admin_notice( string $message, string $type = 'error' ) {
-    add_action( 'admin_notices', function() use ( $message, $type ) {
-        echo '<div class="notice notice-' . esc_attr( $type ) . '"><p>' . esc_html( $message ) . '</p></div>';
+function pbm_add_admin_notice( string $message, string $type = 'error' ) {
+    static $notices = [];
+
+    $notices[] = [ 'message' => $message, 'type' => $type ];
+
+    add_action( 'admin_notices', function() use ( &$notices ) {
+        foreach ( $notices as $notice ) {
+            echo '<div class="notice notice-' . esc_attr( $notice['type'] ) . '"><p>' . $notice['message'] . '</p></div>';
+        }
+        $notices = []; // Clear notices after displaying them
     });
 }
 
@@ -108,12 +115,14 @@ function pbm_force_deactivate_blacklisted_plugins() {
     foreach ( $active_plugins as $plugin ) {
         if ( pbm_is_plugin_blacklisted( $plugin ) ) {
             deactivate_plugins( $plugin );
-            $deactivated_plugins[] = $plugin;
+            $plugin_slug = dirname( $plugin ); // Get the folder name (namespace) of the plugin
+            $deactivated_plugins[] = '<strong>' . esc_html( $plugin_slug ) . '</strong>';
         }
     }
 
     if ( ! empty( $deactivated_plugins ) ) {
-        pbm_show_admin_notice( 'The following plugins have been deactivated because they are blacklisted: ' . implode( ', ', $deactivated_plugins ), 'error' );
+        // Display the admin notice with only the plugin folder names (namespaces) bolded
+        pbm_add_admin_notice( 'The following plugins have been deactivated because they are blacklisted: ' . implode( ', ', $deactivated_plugins ), 'error' );
     }
 }
 add_action( 'admin_init', 'pbm_force_deactivate_blacklisted_plugins' );
@@ -178,15 +187,21 @@ add_action( 'admin_enqueue_scripts', 'pbm_enqueue_admin_scripts' );
 function pbm_prevent_activation( $plugin ) {
     if ( pbm_is_plugin_blacklisted( $plugin ) ) {
         deactivate_plugins( $plugin );
-        wp_die( sprintf( __( 'The plugin %s is blacklisted and cannot be activated.', 'plugin-blacklist-manager' ), esc_html( $plugin ) ) );
+
+        // Add admin notice and redirect back to Plugins page
+        pbm_add_admin_notice( sprintf( __( 'The plugin %s is blacklisted and cannot be activated.', 'plugin-blacklist-manager' ), '<strong>' . esc_html( dirname( $plugin ) ) . '</strong>' ), 'error' );
+
+        // Redirect back to the Plugins page
+        wp_safe_redirect( admin_url( 'plugins.php' ) );
+        exit;
     }
 
     if ( pbm_is_plugin_graylisted( $plugin ) ) {
-        pbm_show_admin_notice( sprintf( __( 'Warning: The plugin %s is graylisted and may be blacklisted in the future.', 'plugin-blacklist-manager' ), esc_html( $plugin ) ), 'warning' );
+        pbm_add_admin_notice( sprintf( __( 'Warning: The plugin %s is graylisted and may be blacklisted in the future.', 'plugin-blacklist-manager' ), '<strong>' . esc_html( dirname( $plugin ) ) . '</strong>' ), 'warning' );
     }
 
     if ( pbm_is_plugin_utility( $plugin ) ) {
-        pbm_show_admin_notice( sprintf( __( 'Reminder: The plugin %s is a utility plugin. Deactivate when not in use.', 'plugin-blacklist-manager' ), esc_html( $plugin ) ), 'info' );
+        pbm_add_admin_notice( sprintf( __( 'Reminder: The plugin %s is a utility plugin. Deactivate when not in use.', 'plugin-blacklist-manager' ), '<strong>' . esc_html( dirname( $plugin ) ) . '</strong>' ), 'info' );
     }
 }
 add_action( 'plugins_loaded', function() {
