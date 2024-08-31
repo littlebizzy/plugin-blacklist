@@ -147,6 +147,40 @@ function pbm_prevent_plugin_activation( $plugin ) {
 add_action( 'activate_plugin', 'pbm_prevent_plugin_activation' );
 
 /**
+ * Display notices for graylisted and utility plugins.
+ */
+function pbm_display_graylist_and_utility_notices() {
+    $blacklist_data = pbm_load_blacklist();
+    
+    $graylisted_plugins = $blacklist_data['graylist'] ?? [];
+    $utility_plugins = $blacklist_data['utility'] ?? [];
+
+    // Active plugins list
+    $active_plugins = get_option( 'active_plugins', [] );
+
+    // Check graylisted plugins and show a notice
+    if ( ! empty( $graylisted_plugins ) ) {
+        pbm_add_admin_notice(
+            'The following plugins are on the graylist and may be blacklisted in the future: <strong>' . implode( ', ', $graylisted_plugins ) . '</strong>',
+            'warning'
+        );
+    }
+
+    // Check utility plugins and show a notice if they are active
+    $active_utility_plugins = array_filter( $active_plugins, function( $plugin ) use ( $utility_plugins ) {
+        return in_array( dirname( $plugin ), $utility_plugins, true );
+    } );
+
+    if ( ! empty( $active_utility_plugins ) ) {
+        pbm_add_admin_notice(
+            'The following utility plugins are currently active but should be deactivated when not in use: <strong>' . implode( ', ', array_map( 'dirname', $active_utility_plugins ) ) . '</strong>',
+            'info'
+        );
+    }
+}
+add_action( 'admin_init', 'pbm_display_graylist_and_utility_notices' );
+
+/**
  * Disable all action links except "Delete" for blacklisted plugins.
  *
  * @param array  $actions An array of plugin action links.
