@@ -17,7 +17,7 @@ Prefix: PLBLST
 defined( 'ABSPATH' ) || exit; // Prevent direct access
 
 /**
- * Load blacklist, graylist, and utility list from external file.
+ * Load blacklist data from external INI file manually.
  *
  * @return array Parsed INI file data or an empty array on failure.
  */
@@ -25,167 +25,176 @@ function pbm_load_blacklist(): array {
     $file_path = WP_CONTENT_DIR . '/blacklist.txt'; // Path to the externally maintained blacklist file
 
     if ( ! file_exists( $file_path ) ) {
-        error_log('Blacklist file not found at ' . $file_path);
+        pbm_show_admin_notice('Blacklist file not found at the expected path: ' . esc_html($file_path), 'error');
         return [];
     }
 
-    // Manually read and clean up the INI file
-    $lines = file( $file_path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES );
-    $cleaned_content = '';
-
-    foreach ( $lines as $line ) {
-        $line = trim( $line );
-
-        // Skip full-line comments and empty lines
-        if ( $line === '' || $line[0] === ';' || $line[0] === '#' ) {
-            continue;
-        }
-
-        // Remove trailing comments after values
-        if ( strpos( $line, ';' ) !== false ) {
-            $line = explode( ';', $line, 2 )[0];
-        }
-
-        // Remove trailing comments after values using hash
-        if ( strpos( $line, '#' ) !== false ) {
-            $line = explode( '#', $line, 2 )[0];
-        }
-
-        $line = trim($line); // Trim again to remove any spaces left after removing comments
-
-        if (!empty($line)) {
-            $cleaned_content .= $line . PHP_EOL; // Add cleaned line to content
-        }
-    }
-
-    error_log('Cleaned INI Content: ' . $cleaned_content); // Debugging line
-
-    // Use parse_ini_string with INI_SCANNER_RAW to prevent type casting
-    $blacklist_data = parse_ini_string( $cleaned_content, true, INI_SCANNER_RAW );
-
-    if ( $blacklist_data === false ) {
-        // Handle error gracefully by logging or notifying admin
-        error_log('Failed to parse INI content: ' . $cleaned_content); // Debugging line
-        if ( is_admin() ) {
-            add_action( 'admin_notices', 'pbm_show_ini_error_notice' );
-        }
+    if ( ! is_readable( $file_path ) ) {
+        pbm_show_admin_notice('Blacklist file is not readable. Check file permissions for: ' . esc_html($file_path), 'error');
         return [];
     }
 
-    error_log('Parsed blacklist data: ' . print_r($blacklist_data, true)); // Debugging line
+    // Read the file manually and parse it line-by-line
+    $blacklist_data = [];
+    $current_section = null;
+
+    $file = fopen($file_path, 'r');
+    if ($file) {
+        while (($line = fgets($file)) !== false) {
+            $line = trim($line);
+
+            // Ignore empty lines
+            if (empty($line)) {
+                continue;
+            }
+
+            // Check for section headers
+            if (preg_match('/^\[(.*)\]$/', $line, $matches)) {
+                $current_section = strtolower(trim($matches[1]));
+                $blacklist_data[$current_section] = [];
+            } elseif ($current_section && !empty($line)) {
+                // Add to the current section
+                $blacklist_data[$current_section][] = $line;
+            }
+        }
+        fclose($file);
+    } else {
+        pbm_show_admin_notice('Failed to open the blacklist file for reading.', 'error');
+        return [];
+    }
+
+    if (empty($blacklist_data['blacklist'])) {
+        pbm_show_admin_notice('No plugins listed under [blacklist] section in the blacklist file.', 'warning');
+    }
 
     return $blacklist_data;
 }
 
 /**
- * Display an admin notice if the INI file is not properly formatted.
+ * Show an admin notice in the WordPress dashboard.
+ *
+ * @param string $message The message to display.
+ * @param string $type The type of notice (error, warning, success, info).
  */
-function pbm_show_ini_error_notice(): void {
-    echo '<div class="notice notice-error">';
-    echo '<p>' . esc_html__( 'Error: The blacklist.txt file is not properly formatted. Please check for syntax errors.', 'plugin-blacklist-manager' ) . '</p>';
-    echo '</div>';
+function pbm_show_admin_notice( string $message, string $type = 'error' ) {
+    add_action( 'admin_notices', function() use ( $message, $type ) {
+        echo '<div class="notice notice-' . esc_attr( $type ) . '"><p>' . esc_html( $message ) . '</p></div>';
+    });
 }
 
 /**
- * Check if a plugin is blacklisted by folder, class, or function name.
+ * Initialize blacklist checks after plugins are loaded.
+ */
+function pbm_init_blacklist_checks() {
+    $blacklist_data = pbm_load_blacklist();
+    $blacklisted_plugins = isset($blacklist_data['blacklist']) ? array_values($blacklist_data['blacklist']) : [];
+
+    if ( ! empty( $blacklisted_plugins ) ) {
+        pbm_show_admin_notice('Blacklisted plugins loaded: ' . implode(', ', $blacklisted_plugins), 'info');
+    } else {
+        pbm_show_admin_notice('No plugins are currently blacklisted or loaded from the file.', 'info');
+    }
+}
+add_action( 'plugins_loaded', 'pbm_init_blacklist_checks' );
+
+/**
+ * Enqueue Inline Script to Disable "Install Now" Button for Blacklisted Plugins.
+ *
+ * @param string $hook_suffix The current admin page.
+ */
+function pbm_enqueue_admin_scripts( $hook_suffix ) {
+    if ( 'plugin-install.php' !== $hook_suffix ) {
+        return;
+    }
+
+    $blacklist_data = pbm_load_blacklist();
+    $blacklisted_plugins = isset($blacklist_data['blacklist']) ? array_values($blacklist_data['blacklist']) : [];
+
+    // If blacklist data is empty after parsing, do nothing
+    if ( empty( $blacklisted_plugins ) ) {
+        return;
+    }
+
+    // Ensure blacklisted_plugins is a flat array of slugs
+    $blacklisted_plugins = array_map('strtolower', $blacklisted_plugins);
+
+    // Inline script to disable the "Install Now" button for blacklisted plugins
+    wp_add_inline_script( 'jquery-core', '
+        jQuery(document).ready(function($) {
+            var blacklistedPlugins = ' . wp_json_encode( $blacklisted_plugins ) . ';
+
+            console.log("Checking blacklisted plugins: ", blacklistedPlugins);
+
+            $(".install-now").each(function() {
+                var pluginSlug = $(this).data("slug");
+
+                console.log("Checking plugin slug: ", pluginSlug);
+
+                if (blacklistedPlugins.includes(pluginSlug)) {
+                    $(this).prop("disabled", true)
+                           .css({
+                               "opacity": "0.5",
+                               "color": "#aaa",
+                               "border-color": "#aaa",
+                               "background-color": "#f7f7f7",
+                               "cursor": "default"
+                           })
+                           .text("Blacklisted")
+                           .removeAttr("href")
+                           .off("click")
+                           .click(function(e) {
+                               e.preventDefault();
+                               e.stopPropagation();
+                           });
+                }
+            });
+        });
+    ' );
+}
+add_action( 'admin_enqueue_scripts', 'pbm_enqueue_admin_scripts' );
+
+/**
+ * Prevent activation of blacklisted plugins.
+ *
+ * @param string $plugin Plugin path.
+ */
+function pbm_prevent_activation( $plugin ) {
+    if ( pbm_is_plugin_blacklisted( $plugin ) ) {
+        deactivate_plugins( $plugin );
+        wp_die( sprintf( __( 'The plugin %s is blacklisted and cannot be activated.', 'plugin-blacklist-manager' ), esc_html( $plugin ) ) );
+    }
+}
+add_action( 'plugins_loaded', function() {
+    add_action( 'activate_plugin', 'pbm_prevent_activation' );
+});
+
+/**
+ * Check if a plugin is blacklisted or if its classes/functions are blacklisted.
  *
  * @param string $plugin Plugin path.
  * @return bool True if the plugin is blacklisted, false otherwise.
  */
 function pbm_is_plugin_blacklisted( string $plugin ): bool {
     $blacklist_data = pbm_load_blacklist();
-    $plugin_slug    = dirname( $plugin );
-
-    // Debugging: Log plugin slug and blacklist data
-    error_log('Checking if plugin is blacklisted: ' . $plugin_slug);
-    error_log('Blacklist data: ' . print_r($blacklist_data['blacklist'] ?? [], true));
+    $plugin_slug    = strtolower( dirname( $plugin ) );
 
     // Check folder names
     if ( pbm_is_name_blacklisted( $plugin_slug, $blacklist_data['blacklist'] ?? [] ) ) {
-        error_log('Plugin ' . $plugin_slug . ' is blacklisted by folder name.');
         return true;
     }
 
-    // Check class names
-    if ( pbm_is_class_or_function_blacklisted( $blacklist_data['blacklist classes'] ?? [], 'class_exists' ) ) {
-        error_log('Plugin ' . $plugin_slug . ' is blacklisted by class name.');
-        return true;
+    // Check classes
+    foreach ( $blacklist_data['blacklist classes'] ?? [] as $class ) {
+        if ( class_exists( $class ) ) {
+            return true;
+        }
     }
 
-    // Check function names
-    if ( pbm_is_class_or_function_blacklisted( $blacklist_data['blacklist functions'] ?? [], 'function_exists' ) ) {
-        error_log('Plugin ' . $plugin_slug . ' is blacklisted by function name.');
-        return true;
-    }
-
-    return false;
-}
-
-/**
- * Check if a plugin is graylisted by folder, class, or function name.
- *
- * @param string $plugin Plugin path.
- * @return bool True if the plugin is graylisted, false otherwise.
- */
-function pbm_is_plugin_graylisted( string $plugin ): bool {
-    $blacklist_data = pbm_load_blacklist();
-    $plugin_slug    = dirname( $plugin );
-
-    // Debugging: Log plugin slug and graylist data
-    error_log('Checking if plugin is graylisted: ' . $plugin_slug);
-    error_log('Graylist data: ' . print_r($blacklist_data['graylist'] ?? [], true));
-
-    // Check folder names
-    if ( pbm_is_name_blacklisted( $plugin_slug, $blacklist_data['graylist'] ?? [] ) ) {
-        error_log('Plugin ' . $plugin_slug . ' is graylisted by folder name.');
-        return true;
-    }
-
-    // Check class names
-    if ( pbm_is_class_or_function_blacklisted( $blacklist_data['graylist classes'] ?? [], 'class_exists' ) ) {
-        error_log('Plugin ' . $plugin_slug . ' is graylisted by class name.');
-        return true;
-    }
-
-    // Check function names
-    if ( pbm_is_class_or_function_blacklisted( $blacklist_data['graylist functions'] ?? [], 'function_exists' ) ) {
-        error_log('Plugin ' . $plugin_slug . ' is graylisted by function name.');
-        return true;
-    }
-
-    return false;
-}
-
-/**
- * Check if a plugin is in the utility list by folder, class, or function name.
- *
- * @param string $plugin Plugin path.
- * @return bool True if the plugin is in the utility list, false otherwise.
- */
-function pbm_is_plugin_utility( string $plugin ): bool {
-    $blacklist_data = pbm_load_blacklist();
-    $plugin_slug    = dirname( $plugin );
-
-    // Debugging: Log plugin slug and utility list data
-    error_log('Checking if plugin is a utility: ' . $plugin_slug);
-    error_log('Utility data: ' . print_r($blacklist_data['utility'] ?? [], true));
-
-    // Check folder names
-    if ( pbm_is_name_blacklisted( $plugin_slug, $blacklist_data['utility'] ?? [] ) ) {
-        error_log('Plugin ' . $plugin_slug . ' is in utility list by folder name.');
-        return true;
-    }
-
-    // Check class names
-    if ( pbm_is_class_or_function_blacklisted( $blacklist_data['utility classes'] ?? [], 'class_exists' ) ) {
-        error_log('Plugin ' . $plugin_slug . ' is in utility list by class name.');
-        return true;
-    }
-
-    // Check function names
-    if ( pbm_is_class_or_function_blacklisted( $blacklist_data['utility functions'] ?? [], 'function_exists' ) ) {
-        error_log('Plugin ' . $plugin_slug . ' is in utility list by function name.');
-        return true;
+    // Check functions
+    foreach ( $blacklist_data['blacklist functions'] ?? [] as $function ) {
+        if ( function_exists( $function ) ) {
+            return true;
+        }
     }
 
     return false;
@@ -200,186 +209,19 @@ function pbm_is_plugin_utility( string $plugin ): bool {
  */
 function pbm_is_name_blacklisted( string $plugin_slug, array $list ): bool {
     foreach ( $list as $item ) {
+        $item = strtolower(trim($item));
         // Exact match (wrapped in slashes)
         if ( strpos( $item, '/' ) === 0 && substr( $item, -1 ) === '/' ) {
             if ( trim( $item, '/' ) === $plugin_slug ) {
-                error_log('Exact match found for plugin slug: ' . $plugin_slug);
                 return true;
             }
         }
-        // Namespace match
-        else if ( strpos( $plugin_slug, $item ) === 0 ) {
-            error_log('Namespace match found for plugin slug: ' . $plugin_slug);
+        // Wildcard match
+        elseif ( $plugin_slug === $item ) {
             return true;
         }
     }
     return false;
 }
-
-/**
- * Helper function to check if a class or function is blacklisted.
- *
- * @param array  $items List of class or function names.
- * @param string $check_type Type of check ('class_exists' or 'function_exists').
- * @return bool True if any class or function is blacklisted, false otherwise.
- */
-function pbm_is_class_or_function_blacklisted( array $items, string $check_type ): bool {
-    foreach ( $items as $name ) {
-        if ( $check_type( $name ) ) {
-            error_log('Blacklisted by ' . $check_type . ': ' . $name);
-            return true;
-        }
-    }
-    return false;
-}
-
-/**
- * Prevent activation of blacklisted plugins.
- *
- * @param string $plugin Plugin path.
- */
-function pbm_prevent_activation( string $plugin ): void {
-    if ( pbm_is_plugin_blacklisted( $plugin ) ) {
-        deactivate_plugins( $plugin );
-        wp_die( sprintf( __( 'The plugin %s is blacklisted and cannot be activated.', 'plugin-blacklist-manager' ), esc_html( $plugin ) ) );
-    }
-
-    if ( pbm_is_plugin_graylisted( $plugin ) ) {
-        add_action( 'admin_notices', 'pbm_show_graylist_warning' );
-    }
-
-    if ( pbm_is_plugin_utility( $plugin ) ) {
-        add_action( 'admin_notices', 'pbm_show_utility_notice' );
-    }
-}
-add_action( 'activate_plugin', 'pbm_prevent_activation' );
-
-/**
- * Display a warning for graylisted plugins.
- */
-function pbm_show_graylist_warning(): void {
-    echo '<div class="notice notice-warning is-dismissible">';
-    echo '<p>' . esc_html__( 'A graylisted plugin has been activated. Please be aware that it may be blacklisted in the future.', 'plugin-blacklist-manager' ) . '</p>';
-    echo '</div>';
-}
-
-/**
- * Display an error for blacklisted plugins.
- *
- * @param string $plugin Plugin path.
- */
-function pbm_show_blacklist_error( string $plugin ): void {
-    echo '<div class="notice notice-error is-dismissible">';
-    echo '<p>' . sprintf( esc_html__( 'The plugin %s has been deactivated because it is blacklisted.', 'plugin-blacklist-manager' ), esc_html( $plugin ) ) . '</p>';
-    echo '</div>';
-}
-
-/**
- * Display an info notice for utility plugins.
- */
-function pbm_show_utility_notice(): void {
-    echo '<div class="notice notice-info is-dismissible">';
-    echo '<p>' . esc_html__( 'A utility plugin is active. Please deactivate it when not in use.', 'plugin-blacklist-manager' ) . '</p>';
-    echo '</div>';
-}
-
-/**
- * Deactivate blacklisted plugins on every page load.
- */
-function pbm_check_and_deactivate_blacklisted_plugins(): void {
-    $active_plugins = get_option( 'active_plugins', [] );
-
-    foreach ( $active_plugins as $plugin ) {
-        if ( pbm_is_plugin_blacklisted( $plugin ) ) {
-            deactivate_plugins( $plugin );
-
-            error_log('Deactivated blacklisted plugin: ' . $plugin); // Debugging line
-
-            // Show admin notice only in admin area
-            if ( is_admin() ) {
-                add_action( 'admin_notices', function() use ( $plugin ) {
-                    pbm_show_blacklist_error( $plugin );
-                });
-            }
-        }
-
-        if ( pbm_is_plugin_graylisted( $plugin ) && is_admin() ) {
-            add_action( 'admin_notices', 'pbm_show_graylist_warning' );
-        }
-
-        if ( pbm_is_plugin_utility( $plugin ) && is_admin() ) {
-            add_action( 'admin_notices', 'pbm_show_utility_notice' );
-        }
-    }
-}
-add_action( 'init', 'pbm_check_and_deactivate_blacklisted_plugins' );
-
-/**
- * Prevent installation of blacklisted plugins.
- *
- * @param array $result Result of the upgrade process.
- * @param array $hook_extra Additional hook arguments.
- * @return array Modified result array.
- */
-function pbm_prevent_installation( $result, $hook_extra ) {
-    $plugin_slug = $hook_extra['slug'] ?? '';
-    if ( empty( $plugin_slug ) ) {
-        return $result;
-    }
-
-    error_log('Attempting to install plugin: ' . $plugin_slug); // Debugging line
-
-    $blacklist_data = pbm_load_blacklist();
-    if ( pbm_is_name_blacklisted( $plugin_slug, $blacklist_data['blacklist'] ?? [] ) ) {
-        error_log('Prevented installation of blacklisted plugin: ' . $plugin_slug); // Debugging line
-        $result['error'] = new WP_Error( 'plugin_blacklisted', __( 'This plugin is blacklisted and cannot be installed.', 'plugin-blacklist-manager' ) );
-    }
-
-    return $result;
-}
-add_filter( 'upgrader_pre_install', 'pbm_prevent_installation', 10, 2 );
-
-/**
- * Enqueue Admin Scripts to Gray Out "Install Now" Button.
- *
- * @param string $hook_suffix The current admin page.
- */
-function pbm_enqueue_admin_scripts( string $hook_suffix ): void {
-    if ( 'plugin-install.php' !== $hook_suffix ) {
-        return;
-    }
-
-    // Pass the blacklist to JavaScript
-    wp_localize_script(
-        'jquery',
-        'pbmBlacklistData',
-        [ 'blacklist' => pbm_load_blacklist()['blacklist'] ?? [] ]
-    );
-
-    // Inline script to disable the "Install Now" button
-    wp_add_inline_script( 'jquery', '
-        jQuery(document).ready(function($) {
-            var blacklistedPlugins = pbmBlacklistData.blacklist || [];
-
-            $(".plugin-card").each(function() {
-                var pluginSlug = $(this).data("slug");
-
-                for (var i = 0; i < blacklistedPlugins.length; i++) {
-                    var blacklistedItem = blacklistedPlugins[i];
-                    if (blacklistedItem.startsWith("/") && blacklistedItem.endsWith("/")) {
-                        if (blacklistedItem.replace(/\//g, "") === pluginSlug) {
-                            $(this).find(".install-now").prop("disabled", true).css("opacity", "0.5").text("Blacklisted");
-                            break;
-                        }
-                    } else if (pluginSlug.startsWith(blacklistedItem)) {
-                        $(this).find(".install-now").prop("disabled", true).css("opacity", "0.5").text("Blacklisted");
-                        break;
-                    }
-                }
-            });
-        });
-    ' );
-}
-add_action( 'admin_enqueue_scripts', 'pbm_enqueue_admin_scripts' );
 
 // Ref: ChatGPT
