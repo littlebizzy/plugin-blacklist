@@ -88,6 +88,37 @@ function pbm_show_admin_notice( string $message, string $type = 'error' ) {
 }
 
 /**
+ * Force deactivate any active blacklisted plugins.
+ */
+function pbm_force_deactivate_blacklisted_plugins() {
+    if ( ! is_admin() ) {
+        return; // Only run this check in the admin dashboard
+    }
+
+    $blacklist_data = pbm_load_blacklist();
+    $blacklisted_plugins = $blacklist_data['blacklist'] ?? [];
+
+    if ( empty( $blacklisted_plugins ) ) {
+        return; // No blacklisted plugins found
+    }
+
+    $active_plugins = get_option( 'active_plugins', [] );
+    $deactivated_plugins = [];
+
+    foreach ( $active_plugins as $plugin ) {
+        if ( pbm_is_plugin_blacklisted( $plugin ) ) {
+            deactivate_plugins( $plugin );
+            $deactivated_plugins[] = $plugin;
+        }
+    }
+
+    if ( ! empty( $deactivated_plugins ) ) {
+        pbm_show_admin_notice( 'The following plugins have been deactivated because they are blacklisted: ' . implode( ', ', $deactivated_plugins ), 'error' );
+    }
+}
+add_action( 'admin_init', 'pbm_force_deactivate_blacklisted_plugins' );
+
+/**
  * Enqueue Inline Script to Disable "Install Now" Button for Blacklisted Plugins.
  *
  * @param string $hook_suffix The current admin page.
