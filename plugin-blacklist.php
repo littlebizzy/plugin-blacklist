@@ -158,10 +158,14 @@ function pbm_display_graylist_and_utility_notices() {
     // Active plugins list
     $active_plugins = get_option( 'active_plugins', [] );
 
-    // Check graylisted plugins and show a notice
-    if ( ! empty( $graylisted_plugins ) ) {
+    // Check active graylisted plugins and show a notice
+    $active_graylisted_plugins = array_filter( $active_plugins, function( $plugin ) use ( $graylisted_plugins ) {
+        return in_array( dirname( $plugin ), $graylisted_plugins, true );
+    } );
+
+    if ( ! empty( $active_graylisted_plugins ) ) {
         pbm_add_admin_notice(
-            'The following plugins are on the graylist and may be blacklisted in the future: <strong>' . implode( ', ', $graylisted_plugins ) . '</strong>',
+            'The following plugins are on the graylist and may be blacklisted in the future: <strong>' . implode( ', ', array_map( 'dirname', $active_graylisted_plugins ) ) . '</strong>',
             'warning'
         );
     }
