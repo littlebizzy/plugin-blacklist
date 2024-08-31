@@ -7,11 +7,14 @@ Disallows bad WordPress plugins
 ### 2.0.0
 - completely refactored plugin to standard WordPress coding using ChatGPT
 - no more cron jobs or database usage
+- main blacklist now called `blacklist`
 - `future` blacklist now called `graylist`
 - `pause` blacklist now called `utility`
-- renamed other lists to: `blacklist classes`, `blacklist functions`, `graylist classes`, `graylist functions`, `utility classes`, `utility functions`
-- blacklisted plugins deactivated on each page load via `init` if activated (no longer uses cron jobs for this check)
+- renamed other sublists to: `blacklist classes`, `blacklist functions`, `graylist classes`, `graylist functions`, `utility classes`, `utility functions`
+- blacklisted plugins force deactivated on each WP Admin page load via `init` if activated (no longer uses cron jobs for this check)
 - new feature to gray out blacklisted plugins in the plugin search
+- new featured to disable blacklisted plugins action links and replace with the word "Blacklisted"
+- trying to circumvent using drop-down menu Activate or direct URL are sent to `wp_die`
 - enhanced code for PHP 8.3
 - compatible with PHP 7.0, 7.2, 7.4, 8.1
 - support for Git Updater (although this is meant to be a MU plugin only)
