@@ -17,7 +17,7 @@ Prefix: PLBLST
 defined( 'ABSPATH' ) || exit; // Prevent direct access
 
 /**
- * Load blacklist data from external INI file manually.
+ * Load blacklist data from an external INI file manually.
  *
  * @return array Parsed INI file data or an empty array on failure.
  */
@@ -25,50 +25,46 @@ function pbm_load_blacklist(): array {
     $file_path = WP_CONTENT_DIR . '/blacklist.txt'; // Path to the externally maintained blacklist file
 
     if ( ! file_exists( $file_path ) ) {
-        pbm_show_admin_notice('Blacklist file not found at the expected path: ' . esc_html($file_path), 'error');
+        pbm_show_admin_notice( 'Blacklist file not found at the expected path: ' . esc_html( $file_path ), 'error' );
         return [];
     }
 
     if ( ! is_readable( $file_path ) ) {
-        pbm_show_admin_notice('Blacklist file is not readable. Check file permissions for: ' . esc_html($file_path), 'error');
+        pbm_show_admin_notice( 'Blacklist file is not readable. Check file permissions for: ' . esc_html( $file_path ), 'error' );
         return [];
     }
 
     // Read the file manually and parse it line-by-line
-    $blacklist_data = [];
+    $blacklist_data   = [];
     $current_section = null;
 
-    $file = fopen($file_path, 'r');
-    if ($file) {
-        while (($line = fgets($file)) !== false) {
-            $line = trim($line);
+    $file = fopen( $file_path, 'r' );
+    if ( $file ) {
+        while ( ( $line = fgets( $file ) ) !== false ) {
+            $line = trim( $line );
 
             // Ignore empty lines and comment lines (starting with ';' or '#')
-            if (empty($line) || $line[0] === ';' || $line[0] === '#') {
+            if ( empty( $line ) || $line[0] === ';' || $line[0] === '#' ) {
                 continue;
             }
 
             // Remove any inline comments after values and strip spaces (assumes semicolon as the comment character)
-            $line = preg_replace('/\s*;\s*.*$/', '', $line);
-            $line = trim($line); // Trim any leading or trailing whitespace from the value
+            $line = preg_replace( '/\s*;\s*.*$/', '', $line );
+            $line = trim( $line ); // Trim any leading or trailing whitespace from the value
 
             // Check for section headers
-            if (preg_match('/^\[(.*)\]$/', $line, $matches)) {
-                $current_section = strtolower(trim($matches[1]));
-                $blacklist_data[$current_section] = [];
-            } elseif ($current_section && !empty($line)) {
+            if ( preg_match( '/^\[(.*)\]$/', $line, $matches ) ) {
+                $current_section = strtolower( trim( $matches[1] ) );
+                $blacklist_data[ $current_section ] = [];
+            } elseif ( $current_section && ! empty( $line ) ) {
                 // Add to the current section
-                $blacklist_data[$current_section][] = $line;
+                $blacklist_data[ $current_section ][] = $line;
             }
         }
-        fclose($file);
+        fclose( $file );
     } else {
-        pbm_show_admin_notice('Failed to open the blacklist file for reading.', 'error');
+        pbm_show_admin_notice( 'Failed to open the blacklist file for reading.', 'error' );
         return [];
-    }
-
-    if (empty($blacklist_data['blacklist'])) {
-        pbm_show_admin_notice('No plugins listed under [blacklist] section in the blacklist file.', 'warning');
     }
 
     return $blacklist_data;
@@ -91,12 +87,12 @@ function pbm_show_admin_notice( string $message, string $type = 'error' ) {
  */
 function pbm_init_blacklist_checks() {
     $blacklist_data = pbm_load_blacklist();
-    $blacklisted_plugins = isset($blacklist_data['blacklist']) ? array_values($blacklist_data['blacklist']) : [];
+    $blacklisted_plugins = isset( $blacklist_data['blacklist'] ) ? array_values( $blacklist_data['blacklist'] ) : [];
 
     if ( ! empty( $blacklisted_plugins ) ) {
-        pbm_show_admin_notice('Blacklisted plugins loaded: ' . implode(', ', $blacklisted_plugins), 'info');
+        pbm_show_admin_notice( 'Blacklisted plugins loaded: ' . implode( ', ', $blacklisted_plugins ), 'info' );
     } else {
-        pbm_show_admin_notice('No plugins are currently blacklisted or loaded from the file.', 'info');
+        pbm_show_admin_notice( 'No plugins are currently blacklisted or loaded from the file.', 'info' );
     }
 }
 add_action( 'plugins_loaded', 'pbm_init_blacklist_checks' );
@@ -112,7 +108,7 @@ function pbm_enqueue_admin_scripts( $hook_suffix ) {
     }
 
     $blacklist_data = pbm_load_blacklist();
-    $blacklisted_plugins = isset($blacklist_data['blacklist']) ? array_values($blacklist_data['blacklist']) : [];
+    $blacklisted_plugins = isset( $blacklist_data['blacklist'] ) ? array_values( $blacklist_data['blacklist'] ) : [];
 
     // If blacklist data is empty after parsing, do nothing
     if ( empty( $blacklisted_plugins ) ) {
@@ -120,19 +116,15 @@ function pbm_enqueue_admin_scripts( $hook_suffix ) {
     }
 
     // Ensure blacklisted_plugins is a flat array of slugs
-    $blacklisted_plugins = array_map('strtolower', $blacklisted_plugins);
+    $blacklisted_plugins = array_map( 'strtolower', $blacklisted_plugins );
 
     // Inline script to disable the "Install Now" button for blacklisted plugins
     wp_add_inline_script( 'jquery-core', '
         jQuery(document).ready(function($) {
             var blacklistedPlugins = ' . wp_json_encode( $blacklisted_plugins ) . ';
 
-            console.log("Checking blacklisted plugins: ", blacklistedPlugins);
-
             $(".install-now").each(function() {
                 var pluginSlug = $(this).data("slug");
-
-                console.log("Checking plugin slug: ", pluginSlug);
 
                 if (blacklistedPlugins.includes(pluginSlug)) {
                     $(this).prop("disabled", true)
@@ -213,7 +205,7 @@ function pbm_is_plugin_blacklisted( string $plugin ): bool {
  */
 function pbm_is_name_blacklisted( string $plugin_slug, array $list ): bool {
     foreach ( $list as $item ) {
-        $item = strtolower(trim($item));
+        $item = strtolower( trim( $item ) );
         // Exact match (wrapped in slashes)
         if ( strpos( $item, '/' ) === 0 && substr( $item, -1 ) === '/' ) {
             if ( trim( $item, '/' ) === $plugin_slug ) {
