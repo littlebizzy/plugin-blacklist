@@ -43,10 +43,14 @@ function pbm_load_blacklist(): array {
         while (($line = fgets($file)) !== false) {
             $line = trim($line);
 
-            // Ignore empty lines
-            if (empty($line)) {
+            // Ignore empty lines and comment lines (starting with ';' or '#')
+            if (empty($line) || $line[0] === ';' || $line[0] === '#') {
                 continue;
             }
+
+            // Remove any inline comments after values and strip spaces (assumes semicolon as the comment character)
+            $line = preg_replace('/\s*;\s*.*$/', '', $line);
+            $line = trim($line); // Trim any leading or trailing whitespace from the value
 
             // Check for section headers
             if (preg_match('/^\[(.*)\]$/', $line, $matches)) {
