@@ -3,7 +3,7 @@
 Plugin Name: Plugin Blacklist
 Plugin URI: https://www.littlebizzy.com/plugins/plugin-blacklist
 Description: Disallows bad WordPress plugins
-Version: 2.0.0
+Version: 2.0.1
 Author: LittleBizzy
 Author URI: https://www.littlebizzy.com
 License: GPLv3
@@ -16,26 +16,39 @@ Prefix: PLBLST
 
 defined( 'ABSPATH' ) || exit; // Prevent direct access
 
+// Store the blacklist data in a global variable to avoid multiple loads
+global $pbm_blacklist_data;
+$pbm_blacklist_data = null;
+
 /**
  * Load blacklist data from an external INI file manually.
  *
  * @return array Parsed INI file data or an empty array on failure.
  */
 function pbm_load_blacklist(): array {
+    global $pbm_blacklist_data;
+
+    // If blacklist data is already loaded, return it
+    if ( ! is_null( $pbm_blacklist_data ) ) {
+        return $pbm_blacklist_data;
+    }
+
     $file_path = WP_CONTENT_DIR . '/blacklist.txt'; // Path to the externally maintained blacklist file
 
     if ( ! file_exists( $file_path ) ) {
         pbm_add_admin_notice( 'Blacklist file not found at the expected path: ' . esc_html( $file_path ), 'error' );
-        return [];
+        $pbm_blacklist_data = [];
+        return $pbm_blacklist_data;
     }
 
     if ( ! is_readable( $file_path ) ) {
         pbm_add_admin_notice( 'Blacklist file is not readable. Check file permissions for: ' . esc_html( $file_path ), 'error' );
-        return [];
+        $pbm_blacklist_data = [];
+        return $pbm_blacklist_data;
     }
 
     // Read the file manually and parse it line-by-line
-    $blacklist_data   = [];
+    $blacklist_data = [];
     $current_section = null;
 
     $file = fopen( $file_path, 'r' );
@@ -64,7 +77,8 @@ function pbm_load_blacklist(): array {
         fclose( $file );
     } else {
         pbm_add_admin_notice( 'Failed to open the blacklist file for reading.', 'error' );
-        return [];
+        $pbm_blacklist_data = [];
+        return $pbm_blacklist_data;
     }
 
     // Check if there is any data loaded in the 'blacklist' section
@@ -72,7 +86,10 @@ function pbm_load_blacklist(): array {
         pbm_add_admin_notice( 'No plugins listed under the [blacklist] section in the blacklist file, or the file is empty.', 'warning' );
     }
 
-    return $blacklist_data;
+    // Store the loaded blacklist data globally to avoid reloading
+    $pbm_blacklist_data = $blacklist_data;
+
+    return $pbm_blacklist_data;
 }
 
 /**
@@ -83,6 +100,13 @@ function pbm_load_blacklist(): array {
  */
 function pbm_add_admin_notice( string $message, string $type = 'error' ) {
     static $notices = [];
+
+    // Avoid adding duplicate notices
+    foreach ( $notices as $notice ) {
+        if ( $notice['message'] === $message && $notice['type'] === $type ) {
+            return;
+        }
+    }
 
     $notices[] = [ 'message' => $message, 'type' => $type ];
 
