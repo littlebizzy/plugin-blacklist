@@ -4,6 +4,10 @@ Disallows bad WordPress plugins
 
 ## Changelog
 
+### 2.0.1
+- new global variable `$pbm_blacklist_data`
+- improved `pbm_add_admin_notice()` to prevent duplicates
+
 ### 2.0.0
 - completely refactored plugin to standard WordPress coding using ChatGPT
 - no more cron jobs or database usage
