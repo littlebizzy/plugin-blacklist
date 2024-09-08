@@ -3,7 +3,7 @@
 Plugin Name: Plugin Blacklist
 Plugin URI: https://www.littlebizzy.com/plugins/plugin-blacklist
 Description: Disallows bad WordPress plugins
-Version: 2.0.1
+Version: 2.0.2
 Author: LittleBizzy
 Author URI: https://www.littlebizzy.com
 License: GPLv3
@@ -15,6 +15,12 @@ Prefix: PLBLST
 */
 
 defined( 'ABSPATH' ) || exit; // Prevent direct access
+
+// Disable WordPress.org updates for this plugin
+add_filter('gu_override_dot_org', function ($overrides) {
+    $overrides[] = 'plugin-blacklist/plugin-blacklist.php';
+    return $overrides;
+});
 
 // Store the blacklist data in a global variable to avoid multiple loads
 global $pbm_blacklist_data;
