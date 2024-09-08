@@ -4,6 +4,9 @@ Disallows bad WordPress plugins
 
 ## Changelog
 
+### 2.0.2
+- add `gu_override_dot_org` (fixed) snippet
+
 ### 2.0.1
 - new global variable `$pbm_blacklist_data`
 - improved `pbm_add_admin_notice()` to prevent duplicates
