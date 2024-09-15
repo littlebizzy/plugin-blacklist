@@ -4,6 +4,10 @@ Disallows bad WordPress plugins
 
 ## Changelog
 
+### 2.1.0
+- minor refactoring to fix support for exact-match `/plugin-slug/` using slashes (without slashes is prefix match only)
+- tweaks to formatting, comments, etc.
+
 ### 2.0.2
 - add `gu_override_dot_org` (fixed) snippet
 
