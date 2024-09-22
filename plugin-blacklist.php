@@ -3,7 +3,7 @@
 Plugin Name: Plugin Blacklist
 Plugin URI: https://www.littlebizzy.com/plugins/plugin-blacklist
 Description: Disallows bad WordPress plugins
-Version: 2.1.0
+Version: 2.1.1
 Author: LittleBizzy
 Author URI: https://www.littlebizzy.com
 License: GPLv3
@@ -243,7 +243,7 @@ function pbm_enqueue_admin_scripts( $hook_suffix ) {
         });
     ' );
 }
-add_action( 'admin_enqueue_scripts', 'pbm_enqueue_admin_scripts' );
+add_action( 'admin_enqueue_scripts', 'pbm_enqueue_admin_scripts', 25 );
 
 // Helper function to check if a plugin is blacklisted
 function pbm_is_name_blacklisted( string $plugin_slug, array $list ): bool {
