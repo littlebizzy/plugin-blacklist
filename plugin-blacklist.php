@@ -268,7 +268,7 @@ function pbm_is_name_blacklisted( string $plugin_slug, array $list ): bool {
             return true;
         }
         // Check for wildcard match (prefix)
-        if ( strpos( $plugin_slug, $item ) === 0 ) {
+        elseif ( strpos( $plugin_slug, $item ) === 0 ) {
             return true;
         }
     }
