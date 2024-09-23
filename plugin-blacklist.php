@@ -3,7 +3,7 @@
 Plugin Name: Plugin Blacklist
 Plugin URI: https://www.littlebizzy.com/plugins/plugin-blacklist
 Description: Disallows bad WordPress plugins
-Version: 2.1.1
+Version: 2.1.2
 Author: LittleBizzy
 Author URI: https://www.littlebizzy.com
 License: GPLv3
@@ -203,6 +203,8 @@ function pbm_modify_plugin_action_links( $actions, $plugin_file, $plugin_data, $
 add_filter( 'plugin_action_links', 'pbm_modify_plugin_action_links', 10, 4 );
 add_filter( 'network_admin_plugin_action_links', 'pbm_modify_plugin_action_links', 10, 4 );
 
+
+
 // Disable "Install Now" button for blacklisted plugins
 function pbm_enqueue_admin_scripts( $hook_suffix ) {
     if ( 'plugin-install.php' !== $hook_suffix ) {
@@ -218,32 +220,49 @@ function pbm_enqueue_admin_scripts( $hook_suffix ) {
 
     // Inline script to disable "Install Now" button for blacklisted plugins
     wp_add_inline_script( 'jquery-core', '
-        jQuery(document).ready(function($) {
-            var blacklistedPlugins = ' . wp_json_encode( $blacklisted_plugins ) . ';
+    jQuery(document).ready(function($) {
+        var blacklistedPlugins = ' . wp_json_encode( $blacklisted_plugins ) . ';
 
+        function disableInstallButtons() {
             $(".install-now").each(function() {
-                var pluginSlug = $(this).data("slug").toLowerCase().trim();
-                var isBlacklisted = blacklistedPlugins.some(function(item) {
-                    if (item.startsWith("/") && item.endsWith("/")) {
-                        return pluginSlug === item.replace(/\//g, "");
-                    } else {
-                        return pluginSlug.indexOf(item) === 0;
-                    }
-                });
+                var pluginSlug = $(this).data("slug");
 
-                if (isBlacklisted) {
-                    $(this).prop("disabled", true)
-                           .css({ "opacity": "0.5", "color": "#777", "border-color": "#ccc", "background-color": "#f7f7f7", "cursor": "default" })
-                           .text("Blacklisted")
-                           .removeAttr("href")
-                           .off("click")
-                           .click(function(e) { e.preventDefault(); e.stopPropagation(); });
+                if (pluginSlug) {
+                    pluginSlug = pluginSlug.toLowerCase().trim();
+
+                    var isBlacklisted = blacklistedPlugins.some(function(item) {
+                        return pluginSlug === item || pluginSlug.startsWith(item);
+                    });
+
+                    if (isBlacklisted) {
+                        $(this).prop("disabled", true)
+                               .css({ "opacity": "0.5", "color": "#777", "border-color": "#ccc", "background-color": "#f7f7f7", "cursor": "default" })
+                               .text("Blacklisted")
+                               .removeAttr("href")
+                               .off("click")
+                               .click(function(e) { e.preventDefault(); e.stopPropagation(); });
+                    }
                 }
             });
+        }
+
+        // Initial run on page load
+        disableInstallButtons();
+
+        // Listen for AJAX completion and re-run the script
+        $(document).ajaxComplete(function() {
+            disableInstallButtons();
         });
-    ' );
+    });
+');
+
+
+
 }
-add_action( 'admin_enqueue_scripts', 'pbm_enqueue_admin_scripts', 25 );
+add_action( 'admin_enqueue_scripts', 'pbm_enqueue_admin_scripts', 5 );
+
+
+
 
 // Helper function to check if a plugin is blacklisted
 function pbm_is_name_blacklisted( string $plugin_slug, array $list ): bool {
