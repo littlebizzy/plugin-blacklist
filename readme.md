@@ -4,6 +4,10 @@ Disallows bad WordPress plugins
 
 ## Changelog
 
+### 2.1.2
+- added `ajaxComplete` handler to ensure "Install Now" button is properly disabled even after AJAX events
+- minor code cleanup and security and performance enhancements
+
 ### 2.1.1
 - changed `pbm_enqueue_admin_scripts` action to priority `25` to avoid conflicts with Repo Man
 
