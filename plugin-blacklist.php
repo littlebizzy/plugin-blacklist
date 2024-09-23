@@ -95,7 +95,7 @@ function pbm_add_admin_notice( string $message, string $type = 'error' ) {
     $notices[] = [ 'message' => $message, 'type' => $type ];
     add_action( 'admin_notices', function() use ( &$notices ) {
         foreach ( $notices as $notice ) {
-            echo '<div class="notice notice-' . esc_attr( $notice['type'] ) . '"><p>' . $notice['message'] . '</p></div>';
+            echo '<div class="notice notice-' . esc_attr( $notice['type'] ) . '"><p>' . esc_html( $notice['message'] ) . '</p></div>';
         }
         $notices = [];
     });
@@ -203,8 +203,6 @@ function pbm_modify_plugin_action_links( $actions, $plugin_file, $plugin_data, $
 add_filter( 'plugin_action_links', 'pbm_modify_plugin_action_links', 10, 4 );
 add_filter( 'network_admin_plugin_action_links', 'pbm_modify_plugin_action_links', 10, 4 );
 
-
-
 // Disable "Install Now" button for blacklisted plugins
 function pbm_enqueue_admin_scripts( $hook_suffix ) {
     if ( 'plugin-install.php' !== $hook_suffix ) {
@@ -221,7 +219,7 @@ function pbm_enqueue_admin_scripts( $hook_suffix ) {
     // Inline script to disable "Install Now" button for blacklisted plugins
     wp_add_inline_script( 'jquery-core', '
     jQuery(document).ready(function($) {
-        var blacklistedPlugins = ' . wp_json_encode( $blacklisted_plugins ) . ';
+        var blacklistedPlugins = ' . esc_js( wp_json_encode( $blacklisted_plugins ) ) . ';
 
         function disableInstallButtons() {
             $(".install-now").each(function() {
@@ -255,14 +253,8 @@ function pbm_enqueue_admin_scripts( $hook_suffix ) {
         });
     });
 ');
-
-
-
 }
 add_action( 'admin_enqueue_scripts', 'pbm_enqueue_admin_scripts', 5 );
-
-
-
 
 // Helper function to check if a plugin is blacklisted
 function pbm_is_name_blacklisted( string $plugin_slug, array $list ): bool {
@@ -272,13 +264,11 @@ function pbm_is_name_blacklisted( string $plugin_slug, array $list ): bool {
         $item = strtolower( trim( $item ) );
 
         // Check for exact match (wrapped in slashes)
-        if ( preg_match( '/^\/.*\/$/', $item ) ) {
-            if ( trim( $item, '/' ) === $plugin_slug ) {
-                return true;
-            }
-        } 
+        if ( preg_match( '/^\/.*\/$/', $item ) && trim( $item, '/' ) === $plugin_slug ) {
+            return true;
+        }
         // Check for wildcard match (prefix)
-        elseif ( strpos( $plugin_slug, $item ) === 0 ) {
+        if ( strpos( $plugin_slug, $item ) === 0 ) {
             return true;
         }
     }
