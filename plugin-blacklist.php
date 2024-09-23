@@ -219,7 +219,7 @@ function pbm_enqueue_admin_scripts( $hook_suffix ) {
     // Inline script to disable "Install Now" button for blacklisted plugins
     wp_add_inline_script( 'jquery-core', '
     jQuery(document).ready(function($) {
-        var blacklistedPlugins = ' . esc_js( wp_json_encode( $blacklisted_plugins ) ) . ';
+        var blacklistedPlugins = ' . wp_json_encode( $blacklisted_plugins ) . ';
 
         function disableInstallButtons() {
             $(".install-now").each(function() {
