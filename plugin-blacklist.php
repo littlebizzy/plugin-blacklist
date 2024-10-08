@@ -3,7 +3,7 @@
 Plugin Name: Plugin Blacklist
 Plugin URI: https://www.littlebizzy.com/plugins/plugin-blacklist
 Description: Disallows bad WordPress plugins
-Version: 2.1.2
+Version: 2.1.3
 Author: LittleBizzy
 Author URI: https://www.littlebizzy.com
 License: GPLv3
@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 add_filter( 'gu_override_dot_org', function( $overrides ) {
     $overrides[] = 'plugin-blacklist/plugin-blacklist.php';
     return $overrides;
-});
+}, 999 );
 
 // Global to store parsed blacklist data
 global $pbm_blacklist_data;
@@ -41,11 +41,11 @@ function pbm_load_blacklist(): array {
 
     // Check if the file exists and is readable
     if ( ! file_exists( $file_path ) ) {
-        pbm_add_admin_notice( 'Blacklist file not found: ' . esc_html( $file_path ) . '. Please upload the correct file.', 'error' );
+        pbm_add_admin_notice( 'Blacklist file not found: ' . wp_kses_post( $file_path ) . '. Please upload the correct file.', 'error' );
         return [];
     }
     if ( ! is_readable( $file_path ) ) {
-        pbm_add_admin_notice( 'Blacklist file is not readable: ' . esc_html( $file_path ) . '. Please check file permissions.', 'error' );
+        pbm_add_admin_notice( 'Blacklist file is not readable: ' . wp_kses_post( $file_path ) . '. Please check file permissions.', 'error' );
         return [];
     }
 
@@ -95,7 +95,7 @@ function pbm_add_admin_notice( string $message, string $type = 'error' ) {
     $notices[] = [ 'message' => $message, 'type' => $type ];
     add_action( 'admin_notices', function() use ( &$notices ) {
         foreach ( $notices as $notice ) {
-            echo '<div class="notice notice-' . esc_attr( $notice['type'] ) . '"><p>' . esc_html( $notice['message'] ) . '</p></div>';
+            echo '<div class="notice notice-' . esc_attr( $notice['type'] ) . '"><p>' . wp_kses_post( $notice['message'] ) . '</p></div>';
         }
         $notices = [];
     });
@@ -138,7 +138,7 @@ function pbm_prevent_plugin_activation( $plugin ) {
 
     if ( pbm_is_name_blacklisted( $plugin_slug, $blacklist_data['blacklist'] ?? [] ) ) {
         wp_die(
-            'The plugin <strong>' . esc_html( $plugin_slug ) . '</strong> is blacklisted and cannot be activated. Please choose another plugin.',
+            'The plugin <strong>' . wp_kses_post( $plugin_slug ) . '</strong> is blacklisted and cannot be activated. Please choose another plugin.',
             'Plugin Activation Error',
             [ 'back_link' => true ]
         );
