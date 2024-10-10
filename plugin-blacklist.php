@@ -3,7 +3,7 @@
 Plugin Name: Plugin Blacklist
 Plugin URI: https://www.littlebizzy.com/plugins/plugin-blacklist
 Description: Disallows bad WordPress plugins
-Version: 2.1.3
+Version: 2.1.4
 Author: LittleBizzy
 Author URI: https://www.littlebizzy.com
 License: GPLv3
@@ -210,16 +210,29 @@ function pbm_enqueue_admin_scripts( $hook_suffix ) {
     }
 
     $blacklist_data = pbm_load_blacklist();
-    $blacklisted_plugins = array_map( 'strtolower', $blacklist_data['blacklist'] ?? [] );
+    $blacklisted_plugins = $blacklist_data['blacklist'] ?? [];
 
     if ( empty( $blacklisted_plugins ) ) {
         return;
     }
 
+    // Process blacklisted plugins to identify exact matches and prefix matches
+    $processed_blacklisted_plugins = array_map( function( $item ) {
+        $item = strtolower( trim( $item ) );
+        if ( preg_match( '/^\/.*\/$/', $item ) ) {
+            // Exact match (item wrapped in slashes)
+            $term = trim( $item, '/' );
+            return array('term' => $term, 'type' => 'exact');
+        } else {
+            // Prefix match
+            return array('term' => $item, 'type' => 'prefix');
+        }
+    }, $blacklisted_plugins );
+
     // Inline script to disable "Install Now" button for blacklisted plugins
     wp_add_inline_script( 'jquery-core', '
     jQuery(document).ready(function($) {
-        var blacklistedPlugins = ' . wp_json_encode( $blacklisted_plugins ) . ';
+        var blacklistedPlugins = ' . wp_json_encode( $processed_blacklisted_plugins ) . ';
 
         function disableInstallButtons() {
             $(".install-now").each(function() {
@@ -229,7 +242,14 @@ function pbm_enqueue_admin_scripts( $hook_suffix ) {
                     pluginSlug = pluginSlug.toLowerCase().trim();
 
                     var isBlacklisted = blacklistedPlugins.some(function(item) {
-                        return pluginSlug === item || pluginSlug.startsWith(item);
+                        if (item.type === "exact") {
+                            // Exact match
+                            return item.term === pluginSlug;
+                        } else if (item.type === "prefix") {
+                            // Prefix match
+                            return pluginSlug.startsWith(item.term);
+                        }
+                        return false;
                     });
 
                     if (isBlacklisted) {
@@ -252,7 +272,7 @@ function pbm_enqueue_admin_scripts( $hook_suffix ) {
             disableInstallButtons();
         });
     });
-');
+    ');
 }
 add_action( 'admin_enqueue_scripts', 'pbm_enqueue_admin_scripts', 5 );
 
