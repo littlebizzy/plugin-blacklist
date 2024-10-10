@@ -4,6 +4,9 @@ Disallows bad WordPress plugins
 
 ## Changelog
 
+### 2.1.4
+- improved disabling "Install Now" button on exact match slugs like `/jetpack/`
+
 ### 2.1.3
 - tweaked disable wordpress.org snippet
 - replaced `esc_html()` with `wp_kses_post()` wherever messages are being output in admin notices
