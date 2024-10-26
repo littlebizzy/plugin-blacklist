@@ -4,6 +4,9 @@ Disallows bad WordPress plugins
 
 ## Changelog
 
+### 2.1.5
+- added `Requires PHP` plugin header
+
 ### 2.1.4
 - improved disabling "Install Now" button on exact match slugs like `/jetpack/`
 
