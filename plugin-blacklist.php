@@ -3,7 +3,7 @@
 Plugin Name: Plugin Blacklist
 Plugin URI: https://www.littlebizzy.com/plugins/plugin-blacklist
 Description: Disallows bad WordPress plugins
-Version: 2.1.5
+Version: 2.1.6
 Requires PHP: 7.0
 Author: LittleBizzy
 Author URI: https://www.littlebizzy.com
@@ -297,7 +297,7 @@ function pbm_is_name_blacklisted( string $plugin_slug, array $list ): bool {
 
 // Helper function to extract plugin slug from file path
 function pbm_get_plugin_slug( string $plugin_file ): string {
-    return dirname( $plugin_file );
+    return untrailingslashit( dirname( plugin_basename( $plugin_file ) ) );
 }
 
 // Ref: ChatGPT
