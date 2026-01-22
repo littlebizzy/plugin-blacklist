@@ -169,19 +169,20 @@ function pbm_prevent_plugin_activation( $plugin ) {
 }
 add_action( 'activate_plugin', 'pbm_prevent_plugin_activation' );
 
-// Display notices for graylisted and utility plugins
+// display notices for graylisted and utility plugins
 function pbm_display_graylist_and_utility_notices() {
     $blacklist_data = pbm_load_blacklist();
-    
+
     $graylisted_plugins = $blacklist_data['graylist'] ?? [];
     $utility_plugins = $blacklist_data['utility'] ?? [];
     $active_plugins = get_option( 'active_plugins', [] );
 
-    // Notify for graylisted plugins
+    // detect active graylisted plugins
     $active_graylisted_plugins = array_filter( $active_plugins, function( $plugin ) use ( $graylisted_plugins ) {
         return pbm_is_name_blacklisted( pbm_get_plugin_slug( $plugin ), $graylisted_plugins );
     } );
 
+    // show notice for graylisted plugins
     if ( ! empty( $active_graylisted_plugins ) ) {
         pbm_add_admin_notice(
             'The following graylisted plugins are active: <strong>' . implode( ', ', array_map( 'pbm_get_plugin_slug', $active_graylisted_plugins ) ) . '</strong>. They may be blacklisted in the future.',
@@ -189,11 +190,12 @@ function pbm_display_graylist_and_utility_notices() {
         );
     }
 
-    // Notify for utility plugins
+    // detect active utility plugins
     $active_utility_plugins = array_filter( $active_plugins, function( $plugin ) use ( $utility_plugins ) {
         return pbm_is_name_blacklisted( pbm_get_plugin_slug( $plugin ), $utility_plugins );
     } );
 
+    // show notice for utility plugins
     if ( ! empty( $active_utility_plugins ) ) {
         pbm_add_admin_notice(
             'The following utility plugins are currently active: <strong>' . implode( ', ', array_map( 'pbm_get_plugin_slug', $active_utility_plugins ) ) . '</strong>. Deactivate them when not in use for security reasons.',
@@ -203,21 +205,27 @@ function pbm_display_graylist_and_utility_notices() {
 }
 add_action( 'admin_init', 'pbm_display_graylist_and_utility_notices' );
 
-// Modify plugin action links for blacklisted plugins
+// modify plugin action links for blacklisted plugins
 function pbm_modify_plugin_action_links( $actions, $plugin_file, $plugin_data, $context ) {
     $blacklist_data = pbm_load_blacklist();
     $blacklisted_plugins = $blacklist_data['blacklist'] ?? [];
 
     $plugin_slug = pbm_get_plugin_slug( $plugin_file );
 
+    // replace actions for blacklisted plugins
     if ( pbm_is_name_blacklisted( $plugin_slug, $blacklisted_plugins ) ) {
         $new_actions = [];
-        $new_actions['blacklisted'] = '<span style="color: #777;">Blacklisted</span>'; // Show Blacklisted label
+
+        // add blacklisted label
+        $new_actions['blacklisted'] = '<span style="color: #777;">Blacklisted</span>';
+
+        // keep delete action only
         foreach ( $actions as $key => $action ) {
             if ( strpos( $key, 'delete' ) !== false ) {
-                $new_actions[ $key ] = $action; // Keep delete action
+                $new_actions[ $key ] = $action;
             }
         }
+
         return $new_actions;
     }
 
