@@ -4,6 +4,11 @@ Disallows bad WordPress plugins
 
 ## Changelog
 
+### 2.2.0
+- added `Tested up to:` header set at 6.9
+- added `Update URI: false` header
+- added `Text Domain: plugin-blacklist` header
+
 ### 2.1.6
 - hardened plugin slug normalization for cross-platform filesystem compatibility
 
