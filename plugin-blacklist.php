@@ -120,27 +120,30 @@ function pbm_add_admin_notice( string $message, string $type = 'error' ) {
     });
 }
 
-// Force deactivate blacklisted plugins
+// force deactivate blacklisted plugins
 function pbm_force_deactivate_blacklisted_plugins() {
     $blacklist_data = pbm_load_blacklist();
     $blacklisted_plugins = $blacklist_data['blacklist'] ?? [];
 
+    // exit early if no blacklisted plugins are defined
     if ( empty( $blacklisted_plugins ) ) {
-        return; // No blacklisted plugins to deactivate
+        return;
     }
 
     $active_plugins = get_option( 'active_plugins', [] );
     $deactivated_plugins = [];
 
+    // scan active plugins for blacklist matches
     foreach ( $active_plugins as $plugin ) {
         $plugin_slug = pbm_get_plugin_slug( $plugin );
+
         if ( pbm_is_name_blacklisted( $plugin_slug, $blacklisted_plugins ) ) {
-            deactivate_plugins( $plugin ); // Deactivate the plugin
+            deactivate_plugins( $plugin );
             $deactivated_plugins[] = $plugin_slug;
         }
     }
 
-    // Display notice if any plugins were deactivated
+    // display notice if any plugins were deactivated
     if ( ! empty( $deactivated_plugins ) ) {
         pbm_add_admin_notice(
             'The following blacklisted plugins have been deactivated: <strong>' . implode( ', ', $deactivated_plugins ) . '</strong>. Please remove them.',
@@ -150,11 +153,12 @@ function pbm_force_deactivate_blacklisted_plugins() {
 }
 add_action( 'admin_init', 'pbm_force_deactivate_blacklisted_plugins' );
 
-// Prevent activation of blacklisted plugins
+// prevent activation of blacklisted plugins
 function pbm_prevent_plugin_activation( $plugin ) {
     $blacklist_data = pbm_load_blacklist();
-    $plugin_slug    = pbm_get_plugin_slug( $plugin );
+    $plugin_slug = pbm_get_plugin_slug( $plugin );
 
+    // block activation if plugin is blacklisted
     if ( pbm_is_name_blacklisted( $plugin_slug, $blacklist_data['blacklist'] ?? [] ) ) {
         wp_die(
             'The plugin <strong>' . wp_kses_post( $plugin_slug ) . '</strong> is blacklisted and cannot be activated. Please choose another plugin.',
