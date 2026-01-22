@@ -4,6 +4,9 @@ Disallows bad WordPress plugins
 
 ## Changelog
 
+### 2.2.1
+- standardized code comments and improved formatting for readability
+
 ### 2.2.0
 - added `Tested up to:` header set at 6.9
 - added `Update URI: false` header
