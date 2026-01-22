@@ -3,14 +3,17 @@
 Plugin Name: Plugin Blacklist
 Plugin URI: https://www.littlebizzy.com/plugins/plugin-blacklist
 Description: Disallows bad WordPress plugins
-Version: 2.1.6
+Version: 2.2.0
 Requires PHP: 7.0
+Tested up to: 6.9
 Author: LittleBizzy
 Author URI: https://www.littlebizzy.com
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
+Update URI: false
 GitHub Plugin URI: littlebizzy/plugin-blacklist
 Primary Branch: master
+Text Domain: plugin-blacklist
 */
 
 // prevent direct access
