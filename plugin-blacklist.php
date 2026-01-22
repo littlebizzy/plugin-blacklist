@@ -3,7 +3,7 @@
 Plugin Name: Plugin Blacklist
 Plugin URI: https://www.littlebizzy.com/plugins/plugin-blacklist
 Description: Disallows bad WordPress plugins
-Version: 2.2.0
+Version: 2.2.1
 Requires PHP: 7.0
 Tested up to: 6.9
 Author: LittleBizzy
@@ -27,32 +27,35 @@ add_filter( 'gu_override_dot_org', function( $overrides ) {
     return $overrides;
 }, 999 );
 
-// Global to store parsed blacklist data
+// global to store parsed blacklist data
 global $pbm_blacklist_data;
 $pbm_blacklist_data = null;
 
-// Load blacklist data from external INI file
+// load blacklist data from external ini file
 function pbm_load_blacklist(): array {
     global $pbm_blacklist_data;
 
-    // If already loaded, return the data
+    // if already loaded, return the data
     if ( ! is_null( $pbm_blacklist_data ) ) {
         return $pbm_blacklist_data;
     }
 
-    $file_path = WP_CONTENT_DIR . '/blacklist.txt'; // Path to the blacklist file
+    // path to the blacklist file
+    $file_path = WP_CONTENT_DIR . '/blacklist.txt';
 
-    // Check if the file exists and is readable
+    // check if the file exists
     if ( ! file_exists( $file_path ) ) {
         pbm_add_admin_notice( 'Blacklist file not found: ' . wp_kses_post( $file_path ) . '. Please upload the correct file.', 'error' );
         return [];
     }
+
+    // check if the file is readable
     if ( ! is_readable( $file_path ) ) {
         pbm_add_admin_notice( 'Blacklist file is not readable: ' . wp_kses_post( $file_path ) . '. Please check file permissions.', 'error' );
         return [];
     }
 
-    // Parse the file manually
+    // parse the file manually
     $blacklist_data = [];
     $current_section = null;
 
@@ -60,14 +63,17 @@ function pbm_load_blacklist(): array {
     if ( $file ) {
         while ( ( $line = fgets( $file ) ) !== false ) {
             $line = trim( $line );
+
+            // ignore comments and empty lines
             if ( empty( $line ) || $line[0] === ';' || $line[0] === '#' ) {
-                continue; // Ignore comments and empty lines
+                continue;
             }
-            // Remove comments after values and trim
+
+            // remove comments after values and trim
             $line = preg_replace( '/\s*;\s*.*$/', '', $line );
             $line = trim( $line );
 
-            // Parse section headers and plugin slugs
+            // parse section headers and plugin slugs
             if ( preg_match( '/^\[(.*)\]$/', $line, $matches ) ) {
                 $current_section = strtolower( trim( $matches[1] ) );
                 $blacklist_data[ $current_section ] = [];
@@ -78,28 +84,38 @@ function pbm_load_blacklist(): array {
         fclose( $file );
     }
 
-    // Handle empty blacklist section
+    // handle empty blacklist section
     if ( empty( $blacklist_data['blacklist'] ) ) {
         pbm_add_admin_notice( 'No plugins listed under [blacklist] in the file. Add plugin slugs to prevent their use.', 'warning' );
     }
 
-    $pbm_blacklist_data = $blacklist_data; // Cache blacklist data
+    // cache blacklist data
+    $pbm_blacklist_data = $blacklist_data;
+
     return $pbm_blacklist_data;
 }
 
-// Add admin notice
+// add admin notice
 function pbm_add_admin_notice( string $message, string $type = 'error' ) {
     static $notices = [];
+
+    // prevent duplicate notices
     foreach ( $notices as $notice ) {
         if ( $notice['message'] === $message && $notice['type'] === $type ) {
-            return; // Avoid duplicate notices
+            return;
         }
     }
+
+    // store notice for output
     $notices[] = [ 'message' => $message, 'type' => $type ];
+
+    // output notices in admin
     add_action( 'admin_notices', function() use ( &$notices ) {
         foreach ( $notices as $notice ) {
             echo '<div class="notice notice-' . esc_attr( $notice['type'] ) . '"><p>' . wp_kses_post( $notice['message'] ) . '</p></div>';
         }
+
+        // reset notices after output
         $notices = [];
     });
 }
