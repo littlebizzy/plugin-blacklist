@@ -4,6 +4,9 @@ Disallows bad WordPress plugins
 
 ## Changelog
 
+### 2.1.6
+- hardened plugin slug normalization for cross-platform filesystem compatibility
+
 ### 2.1.5
 - added `Requires PHP` plugin header
 
