@@ -234,8 +234,9 @@ function pbm_modify_plugin_action_links( $actions, $plugin_file, $plugin_data, $
 add_filter( 'plugin_action_links', 'pbm_modify_plugin_action_links', 10, 4 );
 add_filter( 'network_admin_plugin_action_links', 'pbm_modify_plugin_action_links', 10, 4 );
 
-// Disable "Install Now" button for blacklisted plugins
+// disable "Install Now" button for blacklisted plugins
 function pbm_enqueue_admin_scripts( $hook_suffix ) {
+    // only run on plugin install screen
     if ( 'plugin-install.php' !== $hook_suffix ) {
         return;
     }
@@ -243,24 +244,26 @@ function pbm_enqueue_admin_scripts( $hook_suffix ) {
     $blacklist_data = pbm_load_blacklist();
     $blacklisted_plugins = $blacklist_data['blacklist'] ?? [];
 
+    // exit early if no blacklisted plugins are defined
     if ( empty( $blacklisted_plugins ) ) {
         return;
     }
 
-    // Process blacklisted plugins to identify exact matches and prefix matches
+    // process blacklisted plugins to identify exact matches and prefix matches
     $processed_blacklisted_plugins = array_map( function( $item ) {
         $item = strtolower( trim( $item ) );
+
+        // exact match when wrapped in slashes
         if ( preg_match( '/^\/.*\/$/', $item ) ) {
-            // Exact match (item wrapped in slashes)
             $term = trim( $item, '/' );
-            return array('term' => $term, 'type' => 'exact');
-        } else {
-            // Prefix match
-            return array('term' => $item, 'type' => 'prefix');
+            return array( 'term' => $term, 'type' => 'exact' );
         }
+
+        // prefix match
+        return array( 'term' => $item, 'type' => 'prefix' );
     }, $blacklisted_plugins );
 
-    // Inline script to disable "Install Now" button for blacklisted plugins
+    // inject inline script to disable install buttons
     wp_add_inline_script( 'jquery-core', '
     jQuery(document).ready(function($) {
         var blacklistedPlugins = ' . wp_json_encode( $processed_blacklisted_plugins ) . ';
@@ -274,10 +277,8 @@ function pbm_enqueue_admin_scripts( $hook_suffix ) {
 
                     var isBlacklisted = blacklistedPlugins.some(function(item) {
                         if (item.type === "exact") {
-                            // Exact match
                             return item.term === pluginSlug;
                         } else if (item.type === "prefix") {
-                            // Prefix match
                             return pluginSlug.startsWith(item.term);
                         }
                         return false;
@@ -295,10 +296,10 @@ function pbm_enqueue_admin_scripts( $hook_suffix ) {
             });
         }
 
-        // Initial run on page load
+        // initial run on page load
         disableInstallButtons();
 
-        // Listen for AJAX completion and re-run the script
+        // rerun after ajax updates
         $(document).ajaxComplete(function() {
             disableInstallButtons();
         });
@@ -307,26 +308,28 @@ function pbm_enqueue_admin_scripts( $hook_suffix ) {
 }
 add_action( 'admin_enqueue_scripts', 'pbm_enqueue_admin_scripts', 5 );
 
-// Helper function to check if a plugin is blacklisted
+// helper function to check if a plugin is blacklisted
 function pbm_is_name_blacklisted( string $plugin_slug, array $list ): bool {
     $plugin_slug = strtolower( trim( $plugin_slug ) );
 
     foreach ( $list as $item ) {
         $item = strtolower( trim( $item ) );
 
-        // Check for exact match (wrapped in slashes)
+        // check for exact match wrapped in slashes
         if ( preg_match( '/^\/.*\/$/', $item ) && trim( $item, '/' ) === $plugin_slug ) {
             return true;
         }
-        // Check for wildcard match (prefix)
-        elseif ( strpos( $plugin_slug, $item ) === 0 ) {
+
+        // check for wildcard prefix match
+        if ( strpos( $plugin_slug, $item ) === 0 ) {
             return true;
         }
     }
+
     return false;
 }
 
-// Helper function to extract plugin slug from file path
+// helper function to extract plugin slug from file path
 function pbm_get_plugin_slug( string $plugin_file ): string {
     return untrailingslashit( dirname( plugin_basename( $plugin_file ) ) );
 }
