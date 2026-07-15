@@ -2,6 +2,20 @@
 
 Disallows bad WordPress plugins
 
+## Description
+
+Plugin Blacklist helps administrators prevent unwanted WordPress plugins from being used while also flagging plugins that may require review or only temporary activation.
+
+The plugin reads its rules from `wp-content/blacklist.txt`. Entries under `[blacklist]` are enforced throughout the WordPress admin area: matching active plugins are deactivated, activation attempts are blocked, and the Plugins screen keeps only a Blacklisted label and the delete action. Matching Install Now buttons are also disabled in the WordPress.org plugin installer, including results loaded through AJAX.
+
+These restrictions do not delete plugin files or prevent plugins from being uploaded by other methods, but matching plugins cannot remain active.
+
+Entries under `[graylist]` are allowed to remain active but generate an admin warning because they may be prohibited in the future. Entries under `[utility]` generate an informational reminder to deactivate those plugins when they are not being actively used.
+
+Blacklist entries use prefix matching by default. For example, an entry of `plugin-name` also matches plugin slugs beginning with `plugin-name`, such as `plugin-name-pro`. To target only one exact plugin slug, wrap it in slashes, such as `/plugin-name/`.
+
+Plugin Blacklist does not use a settings screen, database options, or scheduled jobs. The blacklist file is read directly and cached only for the current request, with admin notices shown when the file is missing, unreadable, or contains no enforced blacklist entries.
+
 ## Changelog
 
 ### 2.2.1
